@@ -107,10 +107,14 @@ test -d "$ERR_TARGET_PATH" || (wget $ERR_URL -O $ERR_PATH.zip &&
     sudo mv $ERR_PATH $ERR_TARGET_PATH &&
     sudo ln -s $ERR_TARGET_PATH/_errors/main.css $ERR_TARGET_PATH)
 ### Configs
-DEFAULTD="/etc/nginx/default.d"
-CONFD="/etc/nginx/conf.d"
+NGINX="/etc/nginx"
+DEFAULTD="$NGINX/default.d"
+CONFD="$NGINX/conf.d"
 test -d "$DEFAULTD" || sudo mkdir -p "$DEFAULTD"
 test -d "$CONFD" || sudo mkdir -p "$CONFD"
+(test -f "$NGINX/nginx.conf" &&
+    cmp -s ./nginx/nginx.conf "$NGINX/nginx.conf") ||
+    sudo cp ./nginx/nginx.conf "$NGINX/nginx.conf"
 (test -f "$DEFAULTD/error-pages.conf" &&
     cmp -s ./nginx/error-pages.conf "$DEFAULTD/error-pages.conf") ||
     sudo cp ./nginx/error-pages.conf "$DEFAULTD/error-pages.conf"
