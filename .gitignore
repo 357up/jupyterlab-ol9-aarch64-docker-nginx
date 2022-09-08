@@ -1,2 +1,2 @@
-datasets/*
-notebooks/*
+jupyter-docker/datasets/*
+jupyter-docker/notebooks/*
