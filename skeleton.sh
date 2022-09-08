@@ -13,8 +13,8 @@ sudo dnf remove -y $(rpm -qa | grep cock)
 sudo dnf install -y oracle-epel-release-el9
 
 ## Enable optional repos
-sudo dnf config-manager --set-enabled ol9_addons
-sudo dnf config-manager --set-enabled ol9_codeready_builder
+sudo dnf config-manager --set-enabled \
+    {ol9_addons,ol9_codeready_builder,ol9_developer,ol9_developer_EPEL}
 
 ## Install useful tools
 sudo dnf install -y vim git htop ncdu ansible-core \
