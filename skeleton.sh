@@ -58,7 +58,7 @@ sudo usermod -a -G docker opc
 ## 2) Reload ssh server config
 sudo systemctl reload sshd
 ## 3) Set authentication password for `opc` user
-sudo passwd -S opc | grep "Password locked" || sudo passwd opc
+sudo passwd -S opc | grep "Password locked" && sudo passwd opc
 
 # JupyterLab
 ## App path
