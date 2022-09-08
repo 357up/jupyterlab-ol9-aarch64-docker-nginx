@@ -91,20 +91,20 @@ sudo dnf install -y nginx nginx-all-modules
 ### Error pages
 ERR_URL="https://github.com/denysvitali/nginx-error-pages/archive/refs/heads/master.zip"
 ERR_PATH="nginx-error-pages-master"
-wget $ERR_URL -O $ERR_PATH.zip
-unzip $ERR_PATH -x \
-    "$ERR_PATH/Makefile" \
-    "$ERR_PATH/generate.py" \
-    "$ERR_PATH/Dockerfile" \
-    "$ERR_PATH/.dockerignore" \
-    "$ERR_PATH/LICENSE" \
-    "$ERR_PATH/README.md" \
-    "$ERR_PATH/screenshots/*" \
-    "$ERR_PATH/templates/*" \
-    "$ERR_PATH/snippets/*" \
-    "$ERR_PATH/conf/*"
 ERR_TARGET_PATH="/usr/share/nginx/html/nginx-error-pages"
-test -d "$ERR_TARGET_PATH" || (sudo mv $ERR_PATH $ERR_TARGET_PATH &&
+test -d "$ERR_TARGET_PATH" || (wget $ERR_URL -O $ERR_PATH.zip &&
+    unzip $ERR_PATH -x \
+        "$ERR_PATH/Makefile" \
+        "$ERR_PATH/generate.py" \
+        "$ERR_PATH/Dockerfile" \
+        "$ERR_PATH/.dockerignore" \
+        "$ERR_PATH/LICENSE" \
+        "$ERR_PATH/README.md" \
+        "$ERR_PATH/screenshots/*" \
+        "$ERR_PATH/templates/*" \
+        "$ERR_PATH/snippets/*" \
+        "$ERR_PATH/conf/*" &&
+    sudo mv $ERR_PATH $ERR_TARGET_PATH &&
     sudo ln -s $ERR_TARGET_PATH/_errors/main.css $ERR_TARGET_PATH)
 ### Configs
 DEFAULTD="/etc/nginx/default.d"
