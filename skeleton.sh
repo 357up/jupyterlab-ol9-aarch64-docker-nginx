@@ -58,8 +58,7 @@ sudo usermod -a -G docker opc
 ## 2) Reload ssh server config
 sudo systemctl reload sshd
 ## 3) Set authentication password for `opc` user
-sudo passwd -S opc | grep "Password locked" &&
-    ([[ $(whoami) == "opc" ]] && passwd || sudo passwd opc)
+sudo passwd -S opc | grep "Password locked" || sudo passwd opc
 
 # JupyterLab
 ## App path
@@ -78,7 +77,7 @@ sudo chown -R 1000:1000 $LAB_PATH/{notebooks,datasets}
 # Nginx
 ## Install
 ### Generate temporary self-signed certificate
-test -f "/etc/ssl/private" || sudo ln -s /etc/pki/tls/private /etc/ssl/
+test -L "/etc/ssl/private" || sudo ln -s /etc/pki/tls/private /etc/ssl/
 (test -f "/etc/ssl/private/default.key" &&
     test -f "/etc/ssl/certs/default.pem") ||
     sudo openssl req -new -newkey rsa:2048 -days 3650 -nodes -x509 \
@@ -105,13 +104,13 @@ unzip $ERR_PATH -x \
     "$ERR_PATH/snippets/*" \
     "$ERR_PATH/conf/*"
 ERR_TARGET_PATH="/usr/share/nginx/html/nginx-error-pages"
-test -f "$ERR_TARGET_PATH" || (sudo mv $ERR_PATH $ERR_TARGET_PATH &&
+test -d "$ERR_TARGET_PATH" || (sudo mv $ERR_PATH $ERR_TARGET_PATH &&
     sudo ln -s $ERR_TARGET_PATH/_errors/main.css $ERR_TARGET_PATH)
 ### Configs
 DEFAULTD="/etc/nginx/default.d"
 CONFD="/etc/nginx/conf.d"
-test -f "$DEFAULTD" || sudo mkdir -p "$DEFAULTD"
-test -f "$CONFD" || sudo mkdir -p "$CONFD"
+test -d "$DEFAULTD" || sudo mkdir -p "$DEFAULTD"
+test -d "$CONFD" || sudo mkdir -p "$CONFD"
 (test -f "$DEFAULTD/error-pages.conf" &&
     cmp -s ./nginx/error-pages.conf "$DEFAULTD/error-pages.conf") ||
     sudo cp ./nginx/error-pages.conf "$DEFAULTD/error-pages.conf"
@@ -121,6 +120,7 @@ test -f "$CONFD" || sudo mkdir -p "$CONFD"
 (test -f "$CONFD/jupyterlab.conf" &&
     cmp -s ./nginx/jupyterlab.conf "$CONFD/jupyterlab.conf") ||
     sudo cp ./nginx/jupyterlab.conf "$CONFD/jupyterlab.conf"
+### TODO: replace template values
 
 ## Systemd
 sudo nginx -t &&
@@ -136,5 +136,6 @@ sudo setsebool -P httpd_can_network_relay 1 || true
 sudo setsebool -P httpd_can_network_connect 1 || true
 
 # TODO: DNS
-# Let's Encrypt
+# TODO: Let's Encrypt
 # TODO: Security List (FireWall)
+# TODO: Cleanup
