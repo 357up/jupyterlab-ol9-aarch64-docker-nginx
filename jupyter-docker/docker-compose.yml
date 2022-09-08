@@ -1,0 +1,37 @@
+version:  '3'
+services:
+  datascience-notebook:
+      build:
+        context: './docker-build-context/'
+      restart: unless-stopped
+      container_name:   jupyterlab
+      volumes:
+        - ${LOCAL_WORKING_DIR}:/home/jovyan/work:Z
+        - ${LOCAL_DATASETS}:/home/jovyan/datasets:Z
+      ports:
+        - ${BIND_HOST}:${PORT}:8888
+      networks:
+        - jupyter
+      dns:
+        - 1.1.1.1
+        - 1.0.0.1
+      command: "start-notebook.sh \
+        --NotebookApp.password=${ACCESS_TOKEN} \
+        --NotebookApp.base_url=/ \
+        --NotebookApp.allow_origin=* \
+        --NotebookApp.trust_xheaders=True \
+        --NotebookApp.allow_remote_access=True \
+        --NotebookApp.quit_button=False"
+
+networks:
+  jupyter:
+    driver: bridge
+    #driver_opts:
+    #  com.docker.network.bridge.enable_ip_masquerade: 'false'
+    ipam:
+      driver: default
+      config:
+       -
+        subnet: 172.18.80.0/24
+        gateway: 172.18.80.1
+        
