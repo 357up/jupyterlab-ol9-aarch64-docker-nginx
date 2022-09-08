@@ -44,6 +44,7 @@ sudo dnf config-manager --add-repo \
 sudo systemctl enable --now docker
 
 ## Add user `opc` to `docker` group
+## TODO: Skip if `opc` is already part of the `docker` group
 sudo usermod -a -G docker opc
 
 ## Allow ssh password authentication from docker subnets
@@ -53,6 +54,7 @@ sudo usermod -a -G docker opc
 ## Match address 172.16.0.0/12
 ##    PasswordAuthentication yes
 ## ```
+## TODO: Other SSH settings
 ## 2) Reload ssh server config
 sudo systemctl reload sshd
 ## 3) Set authentication password for `opc` user
@@ -63,25 +65,27 @@ sudo passwd -S opc | grep "Password locked" &&
 ## App path
 LAB_PATH="/opt/jupyter"
 sudo mkdir -p $LAB_PATH/{notebooks,datasets}
-sudo rsync -av --exclude ".git*" ./yupyter-docker/ $LAB_PATH
-[[ -f "$LAB_PATH/.env" ]] && sudo rm -f $LAB_PATH/.env.example ||
+sudo rsync -av --exclude ".git*" ./jupyter-docker/ $LAB_PATH
+test -f "$LAB_PATH/.env" && sudo rm -f $LAB_PATH/.env.example ||
     sudo cp $LAB_PATH/.env.example $LAB_PATH/.env &&
     echo "Don't foget to update $($LAB_PATH/.env)"
 sudo chmod 600 $LAB_PATH/.env
 # TODO: Update access key and other .env variables
 sudo chown -R opc: $LAB_PATH
 sudo chown -R 1000:1000 $LAB_PATH/{notebooks,datasets}
+# TODO: Build and spin up container
 
 # Nginx
 ## Install
 ### Generate temporary self-signed certificate
-([[ -f "/etc/ssl/private/default.key" ]] &&
-    [[ -f "/etc/ssl/certs/default.pem" ]]) ||
-    openssl req -new -newkey rsa:2048 -days 3650 -nodes -x509 \
+test -f "/etc/ssl/private" || sudo ln -s /etc/pki/tls/private /etc/ssl/
+(test -f "/etc/ssl/private/default.key" &&
+    test -f "/etc/ssl/certs/default.pem") ||
+    sudo openssl req -new -newkey rsa:2048 -days 3650 -nodes -x509 \
         -subj "/C=LV/ST=Riga/L=Riga/O=$(hostname)/CN=$(hostname)" \
         -keyout /etc/ssl/private/default.key \
         -out /etc/ssl/certs/default.pem
-[[ -f "/etc/ssl/private/dhparam.pem" ]] ||
+test -f "/etc/ssl/private/dhparam.pem" ||
     openssl dhparam -out /etc/ssl/private/dhparam.pem 4096
 ### Install Nginx package
 sudo dnf install -y nginx nginx-all-modules
@@ -101,26 +105,26 @@ unzip $ERR_PATH -x \
     "$ERR_PATH/snippets/*" \
     "$ERR_PATH/conf/*"
 ERR_TARGET_PATH="/usr/share/nginx/html/nginx-error-pages"
-[[ -f "$ERR_TARGET_PATH" ]] || (sudo mv $ERR_PATH $ERR_TARGET_PATH &&
+test -f "$ERR_TARGET_PATH" || (sudo mv $ERR_PATH $ERR_TARGET_PATH &&
     sudo ln -s $ERR_TARGET_PATH/_errors/main.css $ERR_TARGET_PATH)
 ### Configs
 DEFAULTD="/etc/nginx/default.d"
 CONFD="/etc/nginx/conf.d"
-[[ -f "$DEFAULTD" ]] || sudo mkdir -p "$DEFAULTD"
-[[ -f "$CONFD" ]] || sudo mkdir -p "$CONFD"
-([[ -f "$DEFAULTD/error-pages.conf" ]] &&
-    [[ $(cmp -s ./nginx/error-pages.conf "$DEFAULTD/error-pages.conf") ]]) ||
+test -f "$DEFAULTD" || sudo mkdir -p "$DEFAULTD"
+test -f "$CONFD" || sudo mkdir -p "$CONFD"
+(test -f "$DEFAULTD/error-pages.conf" &&
+    cmp -s ./nginx/error-pages.conf "$DEFAULTD/error-pages.conf") ||
     sudo cp ./nginx/error-pages.conf "$DEFAULTD/error-pages.conf"
-([[ -f "$DEFAULTD/ssl.conf" ]] &&
-    [[ $(cmp -s ./nginx/ssl.conf "$DEFAULTD/ssl.conf") ]]) ||
+(test -f "$DEFAULTD/ssl.conf" &&
+    cmp -s ./nginx/ssl.conf "$DEFAULTD/ssl.conf") ||
     sudo cp ./nginx/ssl.conf "$DEFAULTD/ssl.conf"
-([[ -f "$CONFD/jupyterlab.conf" ]] &&
-    [[ $(cmp -s ./nginx/jupyterlab.conf "$CONFD/jupyterlab.conf") ]]) ||
+(test -f "$CONFD/jupyterlab.conf" &&
+    cmp -s ./nginx/jupyterlab.conf "$CONFD/jupyterlab.conf") ||
     sudo cp ./nginx/jupyterlab.conf "$CONFD/jupyterlab.conf"
 
 ## Systemd
 sudo nginx -t &&
-    sudo systemctl enable --now nginx
+    sudo systemctl enable nginx
 
 ## Firewalld
 (sudo firewall-cmd --permanent --zone=public --add-service=http &&
@@ -132,4 +136,5 @@ sudo setsebool -P httpd_can_network_relay 1 || true
 sudo setsebool -P httpd_can_network_connect 1 || true
 
 # TODO: DNS
+# Let's Encrypt
 # TODO: Security List (FireWall)
