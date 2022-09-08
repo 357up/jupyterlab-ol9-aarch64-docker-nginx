@@ -85,7 +85,7 @@ test -L "/etc/ssl/private" || sudo ln -s /etc/pki/tls/private /etc/ssl/
         -keyout /etc/ssl/private/default.key \
         -out /etc/ssl/certs/default.pem
 test -f "/etc/ssl/private/dhparam.pem" ||
-    openssl dhparam -out /etc/ssl/private/dhparam.pem 4096
+    sudo openssl dhparam -out /etc/ssl/private/dhparam.pem 4096
 ### Install Nginx package
 sudo dnf install -y nginx nginx-all-modules
 ### Error pages
