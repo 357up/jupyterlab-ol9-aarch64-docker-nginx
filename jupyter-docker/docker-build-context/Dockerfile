@@ -13,7 +13,7 @@ COPY ./overrides.json /opt/conda/share/jupyter/lab/settings/
 
 # Configue SSH client
 RUN mkdir ~/.ssh && printf \
-    "Host *\n\tUser opc\n\tServerAliveInterval 120\n\tStrictHostKeyChecking no
+    "Host *\n\tUser opc\n\tServerAliveInterval 120\n\tStrictHostKeyChecking no\
     UserKnownHostsFile=/dev/null\n\tForwardAgent yes\n\tAddKeysToAgent yes\n" \
     > ~/.ssh/config
 
