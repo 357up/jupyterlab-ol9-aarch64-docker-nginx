@@ -16,12 +16,12 @@ services:
         - 1.1.1.1
         - 1.0.0.1
       command: "start-notebook.sh \
-        --NotebookApp.password=${ACCESS_TOKEN} \
-        --NotebookApp.base_url=/ \
-        --NotebookApp.allow_origin=* \
-        --NotebookApp.trust_xheaders=True \
-        --NotebookApp.allow_remote_access=True \
-        --NotebookApp.quit_button=False"
+        --ServerApp.password=${ACCESS_TOKEN} \
+        --ServerApp.base_url=/ \
+        --ServerApp.allow_origin=* \
+        --ServerApp.trust_xheaders=True \
+        --ServerApp.allow_remote_access=True \
+        --ServerApp.quit_button=False"
 
 networks:
   jupyter:
