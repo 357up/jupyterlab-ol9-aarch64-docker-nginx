@@ -55,4 +55,4 @@ RUN jupyter labextension install --clean plotlywidget \
     && jupyter labextension enable plotlywidget \
     && pip3 install --no-cache-dir plotly ipywidgets kaleido
 
-RUN jupyter labextension list
+RUN echo "$(jupyter labextension list)"
