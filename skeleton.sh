@@ -27,12 +27,12 @@ declare -A ALL_STAGES=(
     ["build"]=2
     ["jupyter"]=3
     ["web"]=4
-    ["dns"]=5
-    ["cert"]=6
-    ["ingress"]=7
+    ["ingress"]=5
+    ["dns"]=6
+    ["cert"]=7
     ["cleanup"]=8)
 
-# FUNCTIONS
+# HELPER FUNCTIONS
 
 function splitStages() {
     INPUT=$(awk -F"," '{for(i=1;i<=NF;i++){printf "%s\n", $i}}' <<<"${myargs[$a]}")
@@ -205,8 +205,17 @@ function web() {
 
 function dns() {
     # DNS
+    # TODO: Check if DNS is already configured
     echo "DNS not implemented yet"
     # TODO: Print required DNS records
+    read -p "Press enter to continue"
+}
+
+function ingress() {
+    # Security List (FireWall)
+    # TODO: Check if ingress is already configured.
+    echo "Ingress not implemented yet, please, update security list manually"
+    echo "Consult README.md for details"
     read -p "Press enter to continue"
 }
 
@@ -237,12 +246,6 @@ function cert() {
             --reloadcmd "systemctl reload nginx"
     )
 
-}
-
-function ingress() {
-    # Security List (FireWall)
-    echo "Ingress not implemented yet, update security list manually"
-    read -p "Press enter to continue"
 }
 
 function cleanup() {
@@ -314,7 +317,7 @@ for a in ${!myargs[@]}; do
                 if [[ ${ALL_STAGES[$stage]} == $i ]]; then
                     printf "Performing stage: %s\n" "$stage"
                     # Run stage function
-                    eval "$stage"
+                    $stage
                 fi
             done
         done
