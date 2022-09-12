@@ -274,7 +274,10 @@ set -u
 ### Parse stages.
 for a in ${!myargs[@]}; do
     echo "$a = ${myargs[$a]}"
-    if [[ $a == "--stage" ]]; then
+    if [[ $a == "-l" && ${myargs[$a]} == 1 ]]; then
+        echo "Available stages: ${!ALL_STAGES[@]}"
+        exit 0
+    elif [[ $a == "--stage" ]]; then
         if [[ -z ${myargs[$a]} ]]; then
             STAGES=("${!ALL_STAGES[@]}")
         else
