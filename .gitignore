@@ -1,2 +1,6 @@
 jupyter-docker/datasets/*
 jupyter-docker/notebooks/*
+nginx-error-pages-master*
+acme*
+docopts.sh
+docopts
