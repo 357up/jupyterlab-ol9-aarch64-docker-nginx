@@ -20,7 +20,7 @@
 #set -e
 
 # GLOBALS
-version='0.0.2alpha'
+version='0.0.3alpha'
 declare -A ALL_STAGES=(
     ["prep"]=0
     ["docker"]=1
@@ -205,18 +205,51 @@ function web() {
 
 function dns() {
     # DNS
-    # TODO: Check if DNS is already configured
-    echo "DNS not implemented yet"
-    # TODO: Print required DNS records
-    read -p "Press enter to continue"
+    # TODO: Implement automatic DNS configuration
+    echo "ATENTION: Automatic DNS configuration is not implemented yet!"
+    dig +short $DOMAIN @1.1.1.1 | grep -q "$IP" || (
+        echo "DNS is not configured yet. Please configure it manually."
+        echo "Set follwoing records:"
+        echo "  \`$DOMAIN        3600   IN  A       $IP\`"
+        echo "  \`www.$DOMAIN    3600   IN  CNAME   $DOMAIN\`"
+        echo "See README.md for help."
+        read -p "Press enter once DNS is configured"
+        dig +short $DOMAIN @1.1.1.1 | grep -q "$IP" || (
+            clear
+            echo "Could not resolve $DOMAIN to $IP"
+            echo "Please check DNS configuration and try again."
+            sleep 5
+            dns
+        )
+    )
 }
 
 function ingress() {
     # Security List (FireWall)
-    # TODO: Check if ingress is already configured.
-    echo "Ingress not implemented yet, please, update security list manually"
-    echo "Consult README.md for details"
-    read -p "Press enter to continue"
+    # TODO: Implement automatic security list configuration
+    if [[ $(nc -z $IP 80) && $(nc -z $IP 443) ]]; then
+        echo "WARNING:"
+        echo "  This check might produce false positives."
+        echo "  Double check the Security List ingress rules for port 80 and 443."
+        echo
+        echo "Inbound ports 80 and 443 seem to be open."
+        read -p "Press enter to continue"
+    else
+        echo "Inbound ports 80 and 443 seem to be closed." 
+        echo "Please configure Security List ingress rules manually."
+        echo "See README.md for help."
+        read -p "Press enter once ingress is configured"
+        if [[ $(nc -z $IP 80) && $(nc -z $IP 443) ]]; then
+            echo "Ingress is configured"
+        else
+            clear
+            echo "Could not connect to $IP:80 and $IP:443"
+            echo "This stage might produce false positives."
+            echo "Presuming false positive and continuing execution."
+            echo "Press Ctrl+C to abort."
+            sleep 5
+        fi
+    fi
 }
 
 function cert() {
