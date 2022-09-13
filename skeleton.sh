@@ -16,11 +16,11 @@
 # Examples:
 #   ./skeleton.sh --stage=-dns,-cert -p /opt/jupyter -u opc -e $EMAIL
 
-#set -x
-#set -e
+#set -xe
 
 # GLOBALS
 version='0.0.4alpha'
+
 declare -A ALL_STAGES=(
     ["prep"]=0
     ["docker"]=1
@@ -114,7 +114,7 @@ function docker() {
 
 function jupyter() {
     # JupyterLab
-    ## App path
+    # TODO: Use arg for lab path
     LAB_PATH="/opt/jupyter"
     sudo mkdir -p $LAB_PATH/{notebooks,datasets}
     sudo rsync -av --exclude ".git*" ./jupyter-docker/ $LAB_PATH
@@ -296,7 +296,7 @@ function cleanup() {
 ### Install docopts if not already installed.
 ### http://docopt.org/
 DOCOPTS_LIB="https://raw.githubusercontent.com/docopt/docopts/master/docopts.sh"
-DOCOPTS_BIN="https://github.com/docopt/docopts/releases/latest/download/docopts_linux_amd64"
+DOCOPTS_BIN="https://github.com/docopt/docopts/releases/latest/download/docopts_linux_aarch64"
 
 test -f docopts.sh || wget $DOCOPTS_LIB
 test -x docopts || (wget -O docopts $DOCOPTS_BIN && chmod +x docopts)
@@ -315,6 +315,7 @@ set -u
 ### Parse stages.
 for a in ${!myargs[@]}; do
     echo "$a = ${myargs[$a]}"
+    # TODO: Set variables from arguments
     if [[ $a == "-l" && ${myargs[$a]} == 1 ]]; then
         echo "Available stages: ${!ALL_STAGES[@]}"
         exit 0
