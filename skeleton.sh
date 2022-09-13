@@ -20,7 +20,7 @@
 #set -e
 
 # GLOBALS
-version='0.0.3alpha'
+version='0.0.4alpha'
 declare -A ALL_STAGES=(
     ["prep"]=0
     ["docker"]=1
@@ -129,6 +129,7 @@ function jupyter() {
 
 function build() {
     # Build docker image
+    # TODO: Implement build stage
     #LAB_PATH="/opt/jupyter"
     #docker build -t jupyterlab:latest $LAB_PATH
     echo "Build not implemented yet"
@@ -187,7 +188,11 @@ function web() {
     (test -f "$CONFD/jupyterlab.conf" &&
         cmp -s ./nginx/jupyterlab.conf "$CONFD/jupyterlab.conf") ||
         sudo cp ./nginx/jupyterlab.conf "$CONFD/jupyterlab.conf"
-    ### TODO: replace template values
+
+    ### Replace template values
+    source /opt/jupyter/.env
+    sudo sed -i "s|###BIND_HOST###|$BIND_HOST|g;s|###BIND_PORT###|$PORT|g;\
+    s|###DOMAIN###|$DOMAIN|g" "$CONFD/jupyterlab.conf"
 
     ## Firewalld
     (sudo firewall-cmd --permanent --zone=public --add-service=http &&
@@ -235,7 +240,7 @@ function ingress() {
         echo "Inbound ports 80 and 443 seem to be open."
         read -p "Press enter to continue"
     else
-        echo "Inbound ports 80 and 443 seem to be closed." 
+        echo "Inbound ports 80 and 443 seem to be closed."
         echo "Please configure Security List ingress rules manually."
         echo "See README.md for help."
         read -p "Press enter once ingress is configured"
