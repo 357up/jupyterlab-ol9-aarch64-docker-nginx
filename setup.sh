@@ -312,7 +312,7 @@ function cert() {
     # Issue certificate if not issued already
     test -d "$ACME_CERT_DIR/$DOMAIN" || (
         sudo $ACME_BIN_DIR/acme.sh --home $ACME_BIN_DIR --config-home $ACME_BASE_DIR \
-            --force --issue -d $DOMAIN -d www.$DOMAIN --dns -w /usr/share/nginx/html \
+            --force --issue -d $DOMAIN -d www.$DOMAIN -w /usr/share/nginx/html \
             --key-file /etc/ssl/private/$DOMAIN.key --cert-file /etc/ssl/certs/$DOMAIN.crt \
             --ca-file /etc/ssl/certs/$DOMAIN.cacrt --fullchain-file /etc/ssl/certs/$DOMAIN.combined.pem \
             --reloadcmd "systemctl reload nginx"
