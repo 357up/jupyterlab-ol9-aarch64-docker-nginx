@@ -176,7 +176,7 @@ function web() {
             -keyout /etc/ssl/private/default.key \
             -out /etc/ssl/certs/default.pem
     test -f "/etc/ssl/private/dhparam.pem" ||
-        sudo openssl dhparam -out /etc/ssl/private/dhparam.pem 4096
+        sudo openssl dhparam -dsaparam -out /etc/ssl/private/dhparam.pem 4096
     ### Install Nginx package
     sudo dnf install -y nginx nginx-all-modules
     ### Configure Nginx
