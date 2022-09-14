@@ -81,6 +81,9 @@ function prep() {
     sudo dnf install -y vim git htop ncdu ansible-core \
         policycoreutils-python-utils netcat bind-utils \
         wget curl unzip jq python3-pip
+    
+    ## generate_token.py requires IPython 7.32.0 or older
+    python3 -m pip install --upgrade ipython==7.32.0
 }
 
 function docker() {

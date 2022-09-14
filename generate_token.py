@@ -1,13 +1,6 @@
 #!/usr/bin/env python
 
-try:
-    import IPython as IPython
-except ModuleNotFoundError:
-    import subprocess
-    import sys
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'ipython==7.32.0'])
-finally:
-    import IPython as IPython
+import IPython as IPython
 
 if __name__ == "__main__":
     print("Generate a access token")
