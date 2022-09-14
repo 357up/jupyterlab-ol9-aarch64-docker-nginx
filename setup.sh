@@ -155,6 +155,8 @@ function jupyter() {
                 grep ACCESS_TOKEN)|" $LAB_PATH/.env
         fi
     fi
+    # Update JupyterLab path
+    grep "$LAB_PATH" $LAB_PATH/.env || sed -i "s|/opt/jupyterlab|$LAB_PATH|" $LAB_PATH/.env
     # TODO: Make other .env variables configurable with this script
 
     sudo chown -R 1000:1000 $LAB_PATH/{notebooks,datasets}
