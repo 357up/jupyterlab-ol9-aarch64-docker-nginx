@@ -135,7 +135,6 @@ function jupyter() {
         echo "Don't foget to update $LAB_PATH/.env file"
     sudo chmod 600 $LAB_PATH/.env
     sudo chown -R $USER: $LAB_PATH
-    # TODO: Update access key and other .env variables
     # Update JupyterLab password
     if [[ $JUPYTERLAB_PASSWORD != "<empty>" ]]; then
         sed -i "s|ACCESS_TOKEN=.*|$(./generate_token.py -p $JUPYTERLAB_PASSWORD |
@@ -153,15 +152,19 @@ function jupyter() {
                 grep ACCESS_TOKEN)|" $LAB_PATH/.env
         fi
     fi
+    # TODO: Make other .env variables configurable with this script
+
     sudo chown -R 1000:1000 $LAB_PATH/{notebooks,datasets}
 }
 
 function build() {
     # Build docker image
-    # TODO: Implement build stage
-    #LAB_PATH="/opt/jupyter"
-    #docker build -t jupyterlab:latest $LAB_PATH
-    echo "Build not implemented yet"
+    docker compose -f $LAB_PATH/docker-compose.yml build --pull
+    # Re-deploy JupyterLab
+    docker compose -f $LAB_PATH/docker-compose.yml down
+    docker compose -f $LAB_PATH/docker-compose.yml up -d &&
+        docker system prune -a -f && source $LAB_PATH/.env &&
+        echo "JupyterLab is running at $BIND_HOST:$PORT"
 }
 
 function web() {
@@ -480,3 +483,9 @@ for i in ${STAGE_INDEXES[@]}; do
         fi
     done
 done
+
+if [[ $(curl -sSI https://$DOMAIN) ]]; then
+    echo "Your JupyterLab instance is ready at https://$DOMAIN"
+else 
+    echo "Something went wrong. Please check the logs."
+fi
