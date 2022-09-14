@@ -304,14 +304,14 @@ function cert() {
             grep location: | sed "s/^.*\/\(.*\)\r$/\1/g") &&
             wget -O acme.tar.gz \
                 https://github.com/acmesh-official/acme.sh/archive/refs/tags/$ACME_VERSION.tar.gz &&
-            tar -xzf acme.tar.gz && cd ./acme.sh-$ACME_VERSION && ./acme.sh --install --home $ACME_BIN_DIR \
+            tar -xzf acme.tar.gz && cd ./acme.sh-$ACME_VERSION && sudo ./acme.sh --install --home $ACME_BIN_DIR \
             --config-home $ACME_BASE_DIR --cert-home $ACME_CERT_DIR --accountemail $EMAIL \
             --accountkey $ACME_CONF_DIR/myaccount.key --accountconf $ACME_CONF_DIR/myaccount.conf && cd ..
     )
     
     # Issue certificate if not issued already
     test -d "$ACME_CERT_DIR/$DOMAIN" || (
-        $ACME_BIN_DIR/acme.sh --home $ACME_BIN_DIR --config-home $ACME_BASE_DIR \
+        sudo $ACME_BIN_DIR/acme.sh --home $ACME_BIN_DIR --config-home $ACME_BASE_DIR \
             --issue -d $DOMAIN -d www.$DOMAIN --dns -w /usr/share/nginx/html \
             --key-file /etc/ssl/private/$DOMAIN.key --cert-file /etc/ssl/certs/$DOMAIN.crt \
             --ca-file /etc/ssl/certs/$DOMAIN.cacrt --fullchain-file /etc/ssl/certs/$DOMAIN.combined.pem \
