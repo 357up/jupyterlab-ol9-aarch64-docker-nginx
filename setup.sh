@@ -111,8 +111,11 @@ function docker() {
     sudo systemctl enable --now docker
 
     ## Add user `$USER` to `docker` group
-    ## TODO: Skip if `$USER` is already part of the `docker` group
-    sudo usermod -a -G docker $USER
+    if [[ ! $(groups | grep docker) ]]; then
+        sudo usermod -a -G docker $USER
+        ## Activate the new group membership
+        newgrp docker
+    fi
 
     ## Allow ssh password authentication from docker subnets
     ## 1) add folowing block at the end of `/etc/ssh/sshd`
