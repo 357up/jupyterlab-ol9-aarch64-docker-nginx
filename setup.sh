@@ -80,7 +80,7 @@ function prep() {
     ## Install useful tools
     sudo dnf install -y vim git htop ncdu ansible-core \
         policycoreutils-python-utils netcat bind-utils \
-        wget curl unzip jq
+        wget curl unzip jq python3-pip
 }
 
 function docker() {
