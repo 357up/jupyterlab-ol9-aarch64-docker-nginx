@@ -18,7 +18,8 @@
 #   ./setup.sh --stages=-dns,-cert -p /opt/jupyter -u opc -e $EMAIL
 #   ./setup.sh --stages=-all,lab -p /opt/jupyter --jupyterlab-password=TOP-SECRET
 
-set -ex
+#set -x
+set -e
 
 # TODO: Write README.md
 # TODO: Create motd
@@ -339,7 +340,7 @@ set -u
 
 ## Main logic
 for a in ${!myargs[@]}; do
-    echo "$a = ${myargs[$a]}"
+    #echo "$a = ${myargs[$a]}"
     ### Set variables from arguments
     # TODO: Make sure that arguments are really required when stage filter is applied
     if [[ $a == "-l" && ${myargs[$a]} == 1 ]]; then
