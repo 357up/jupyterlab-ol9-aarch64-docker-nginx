@@ -229,6 +229,10 @@ function web() {
     sudo setsebool -P httpd_can_network_relay 1 || true
     sudo setsebool -P httpd_can_network_connect 1 || true
 
+    ## Temporary disable $CONFD/jupyterlab.conf when first run
+    test -f /etc/ssl/cert/$DOMAIN.combined.pem ||
+        sudo mv "$CONFD/jupyterlab.conf" "$CONFD/jupyterlab.conf.disabled"
+
     ## Systemd
     sudo nginx -t &&
         sudo systemctl enable --now nginx
@@ -301,6 +305,7 @@ function cert() {
             --config-home $ACME_BASE_DIR --cert-home $ACME_CERT_DIR --accountemail $EMAIL \
             --accountkey $ACME_CONF_DIR/myaccount.key --accountconf $ACME_CONF_DIR/myaccount.conf
     )
+    
     # Issue certificate if not issued already
     test -d "$ACME_CERT_DIR/$DOMAIN" || (
         $ACME_BIN_DIR/acme.sh --home $ACME_BIN_DIR --config-home $ACME_BASE_DIR \
@@ -309,6 +314,12 @@ function cert() {
             --ca-file /etc/ssl/certs/$DOMAIN.cacrt --fullchain-file /etc/ssl/certs/$DOMAIN.combined.pem \
             --reloadcmd "systemctl reload nginx"
     )
+    
+    # Enable jupyterlab.conf
+    test -f "$CONFD/jupyterlab.conf.disabled" &&
+        sudo mv "$CONFD/jupyterlab.conf.disabled" "$CONFD/jupyterlab.conf" &&
+        sudo nginx -t && sudo systemctl reload nginx
+    
 
 }
 
