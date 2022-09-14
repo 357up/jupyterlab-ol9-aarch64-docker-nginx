@@ -253,7 +253,6 @@ function dns() {
         echo "See README.md for help."
         read -p "Press enter once DNS is configured"
         dig +short $DOMAIN @1.1.1.1 | grep -q "$IP" || (
-            clear
             echo "Could not resolve $DOMAIN to $IP"
             echo "Please check DNS configuration and try again."
             sleep 5
@@ -280,7 +279,6 @@ function ingress() {
         if [[ $(nc -z $IP 80) && $(nc -z $IP 443) ]]; then
             echo "Ingress is configured"
         else
-            clear
             echo "Could not connect to $IP:80 and $IP:443"
             echo "This stage might produce false positives."
             echo "Presuming false positive and continuing execution."
@@ -310,7 +308,7 @@ function cert() {
     )
     
     # Issue certificate if not issued already
-    test -d "$ACME_CERT_DIR/$DOMAIN" || (
+    sudo test -d "$ACME_CERT_DIR/$DOMAIN" || (
         sudo $ACME_BIN_DIR/acme.sh --home $ACME_BIN_DIR --config-home $ACME_BASE_DIR \
             --force --issue -d $DOMAIN -d www.$DOMAIN -w /usr/share/nginx/html \
             --key-file /etc/ssl/private/$DOMAIN.key --cert-file /etc/ssl/certs/$DOMAIN.crt \
