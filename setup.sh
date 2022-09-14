@@ -1,25 +1,31 @@
 #!/usr/bin/env bash
 #
 # Usage:
-#   ./skeleton.sh ( [--stage=all] | --stage=[all,]<-stage>... | --stage=[-all,]<stage>... ) [options]
-#   ./skeleton.sh -h | --help
-#   ./skeleton.sh -l | --list-stages
-#   ./skeleton.sh --version
+#   ./setup.sh ( [--stages=all] | --stages=[all,]<-stage>... | --stages=[-all,]<stage>... ) [options]
+#   ./setup.sh -h | --help
+#   ./setup.sh -l | --list-stages
+#   ./setup.sh --version
 #
 # Options:
 #   -u,--system-user=<user>             Application user [default: opc]
 #   --system-user-password=<pw>         Application user password [default: <empty>]
+#   --jupyterlab-password=<pw>          JupyterLab password [default: <empty>]
 #   -d,--domain=<domain>                Application domain [default: $DOMAIN]
 #   -e,--email=<email>                  Email address to send acme.sh notifications to [default: $EMAIL]
 #   -p,--lab-path=<path>                Path to lab directory [default: /opt/jupyter]
 #
 # Examples:
-#   ./skeleton.sh --stage=-dns,-cert -p /opt/jupyter -u opc -e $EMAIL
+#   ./setup.sh --stages=-dns,-cert -p /opt/jupyter -u opc -e $EMAIL
+#   ./setup.sh --stages=-all,lab -p /opt/jupyter --jupyterlab-password=TOP-SECRET
 
-#set -xe
+set -ex
+
+# TODO: Write README.md
+# TODO: Create motd
 
 # GLOBALS
-version='0.0.4alpha'
+version='0.0.6alpha'
+IP=$(curl -sSL https://ipv4.icanhazip.com)
 
 declare -A ALL_STAGES=(
     ["prep"]=0
@@ -37,9 +43,7 @@ declare -A ALL_STAGES=(
 function splitStages() {
     INPUT=$(awk -F"," '{for(i=1;i<=NF;i++){printf "%s\n", $i}}' <<<"${myargs[$a]}")
     while read -r line; do
-        if [[ $line =~ ^-?all$ ]]; then
-            true
-        else
+        if [[ ! $line =~ ^-?all$ ]]; then
             STAGES+=("$line")
         fi
     done <<<"$INPUT"
@@ -48,6 +52,16 @@ function splitStages() {
 # STAGES
 
 function prep() {
+    # Set authentication password for the system user
+    if [[ $USER_PASSWORD != "<empty>" ]]; then
+        echo "$USER:$USER_PASSWORD" | sudo chpasswd
+    else
+        if [[ $(sudo passwd -S $USER | grep "Password locked") ]]; then
+            echo "Password for $USER wasn't specified. Enter the password now"
+            sudo passwd $USER
+        fi
+    fi
+
     # System packages
     ## install updates
     sudo dnf update -y
@@ -74,14 +88,14 @@ function docker() {
     sudo dnf group remove -y "Container Management"
     ## currently there is no docker-ce binary shipped for OL9_aarch64
     ## but Centos Stream 9 is the upstream of EL9 and OL9
-    ## and docker-ce for S9 seems to be working just fine on OL9.
-    ## But we will keep the docker-ce repo disabled by default just to
-    ## be sure sure that a system update does not break it.
+    ## S9 docker-ce seems to be working just fine on OL9.
+    ## We will, however, keep the docker-ce repo disabled by default just to
+    ## be sure sure that a system update does not break the installation.
     ##
     ## In order to check if docker or any of it components have updates
     ## run `sudo dnf check-update --enablerepo=docker-ce-stable`
     ## and in order to update it/those
-    ## `sudo dnf update --enablerepo=docker-ce-stable`
+    ## `sudo dnf update --enablerepo=docker-ce-stable --nobest`
     sudo dnf config-manager --add-repo \
         https://download.docker.com/linux/centos/docker-ce.repo &&
         sudo rpm --import https://download.docker.com/linux/centos/gpg &&
@@ -92,9 +106,9 @@ function docker() {
     ## Enable and start docker service
     sudo systemctl enable --now docker
 
-    ## Add user `opc` to `docker` group
-    ## TODO: Skip if `opc` is already part of the `docker` group
-    sudo usermod -a -G docker opc
+    ## Add user `$USER` to `docker` group
+    ## TODO: Skip if `$USER` is already part of the `docker` group
+    sudo usermod -a -G docker $USER
 
     ## Allow ssh password authentication from docker subnets
     ## 1) add folowing block at the end of `/etc/ssh/sshd`
@@ -105,25 +119,36 @@ function docker() {
     ## ```
     ## TODO: Other SSH settings
     ## 2) Reload ssh server config
-    sudo systemctl reload sshd
-    ## 3) Set authentication password for `opc` user
-    ## TODO: Ask password at the beggining and
-    sudo passwd -S opc | grep "Password locked" && sudo passwd opc
-
+    #sudo systemctl reload sshd
 }
 
 function jupyter() {
     # JupyterLab
-    # TODO: Use arg for lab path
-    LAB_PATH="/opt/jupyter"
     sudo mkdir -p $LAB_PATH/{notebooks,datasets}
     sudo rsync -av --exclude ".git*" ./jupyter-docker/ $LAB_PATH
     test -f "$LAB_PATH/.env" && sudo rm -f $LAB_PATH/.env.example ||
         sudo cp $LAB_PATH/.env.example $LAB_PATH/.env &&
         echo "Don't foget to update $($LAB_PATH/.env)"
     sudo chmod 600 $LAB_PATH/.env
+    sudo chown -R $USER: $LAB_PATH
     # TODO: Update access key and other .env variables
-    sudo chown -R opc: $LAB_PATH
+    # Update JupyterLab password
+    if [[ $JUPYTERLAB_PASSWORD != "<empty>" ]]; then
+        sed -i "s|ACCESS_TOKEN=.*|$(./generate_token.py -p $JUPYTERLAB_PASSWORD |
+            grep ACCESS_TOKEN)|" $LAB_PATH/.env
+    else
+        CURRENT_TOKEN=$(grep ACCESS_TOKEN $LAB_PATH/.env)
+        ORIG_TOKEN=$(grep ACCESS_TOKEN $./jupyter-docker/.env.example)
+        if [[ "$CURRENT_TOKEN" == "$ORIG_TOKEN" ]]; then
+            while [[ $JUPYTERLAB_PASSWORD == "<empty>" || $JUPYTERLAB_PASSWORD == "" ||
+                ! ${#JUPYTERLAB_PASSWORD} -ge 8 ]]; do
+                echo "JupyterLab password wasn't specified or is too short. Enter the password now"
+                read -s JUPYTERLAB_PASSWORD
+            done
+            sed -i "s|ACCESS_TOKEN=.*|$(./generate_token.py -p $JUPYTERLAB_PASSWORD |
+                grep ACCESS_TOKEN)|" $LAB_PATH/.env
+        fi
+    fi
     sudo chown -R 1000:1000 $LAB_PATH/{notebooks,datasets}
 }
 
@@ -190,7 +215,7 @@ function web() {
         sudo cp ./nginx/jupyterlab.conf "$CONFD/jupyterlab.conf"
 
     ### Replace template values
-    source /opt/jupyter/.env
+    source $LAB_PATH/.env
     sudo sed -i "s|###BIND_HOST###|$BIND_HOST|g;s|###BIND_PORT###|$PORT|g;\
     s|###DOMAIN###|$DOMAIN|g" "$CONFD/jupyterlab.conf"
 
@@ -312,14 +337,93 @@ eval "$parsed"
 
 set -u
 
-### Parse stages.
+## Main logic
 for a in ${!myargs[@]}; do
     echo "$a = ${myargs[$a]}"
-    # TODO: Set variables from arguments
+    ### Set variables from arguments
+    # TODO: Make sure that arguments are really required when stage filter is applied
     if [[ $a == "-l" && ${myargs[$a]} == 1 ]]; then
         echo "Available stages: ${!ALL_STAGES[@]}"
         exit 0
-    elif [[ $a == "--stage" ]]; then
+    #### Define JupyterLab domain ($DOMAIN)
+    elif [[ $a == "--domain" ]]; then
+        if [[ ${myargs[$a]} == "" ]]; then
+            echo "Domain name is required."
+            exit 1
+        elif [[ ${myargs[$a]} == "\$DOMAIN" ]]; then
+            if [[ "${DOMAIN-}" == "" ]]; then
+                echo "Domain is required."
+                exit 1
+            else
+                DOMAIN="${DOMAIN}"
+            fi
+        elif [[ ${myargs[$a]} =~ ^[a-zA-Z0-9.-]+$ ]]; then
+            DOMAIN=${myargs[$a]}
+        else
+            echo "Invalid domain name provided: ${myargs[$a]}"
+            exit 1
+        fi
+        echo "Domain: $DOMAIN"
+    #### Define acme.sh account email ($EMAIL)
+    elif [[ $a == "--email" ]]; then
+        if [[ ${myargs[$a]} == "\$EMAIL" ]]; then
+            if [[ "${EMAIL-}" == "" ]]; then
+                echo "Email address is required."
+                exit 1
+            else
+                EMAIL="${EMAIL}"
+            fi
+        elif [[ ${myargs[$a]} =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+(\.[A-Za-z]+)*$ ]]; then
+            EMAIL=${myargs[$a]}
+        else
+            echo "Invalid email address."
+        fi
+        echo "Email: $EMAIL"
+    #### Define system user ($USER)
+    elif [[ $a == "--system-user" ]]; then
+        if [[ ${myargs[$a]} == "" || ${myargs[$a]} == "opc" ]]; then
+            USER=opc
+        elif [[ ${myargs[$a]} =~ ^[a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}\$)$ ]]; then
+            USER=${myargs[$a]}
+        else
+            echo "Invalid username \"${myargs[$a]}\" provided"
+            exit 1
+        fi
+        echo "System user: $USER"
+    #### Define system user's password ($USER_PASSWORD)
+    elif [[ $a == "--system-user-password" ]]; then
+        if [[ ${myargs[$a]} == "" ]]; then
+            USER_PASSWORD="<empty>"
+        else
+            USER_PASSWORD=${myargs[$a]}
+        fi
+    ### Define JupyterLab password ($JUPYTERLAB_PASSWORD)
+    elif [[ $a == "--jupyterlab-password" ]]; then
+        if [[ ${myargs[$a]} == "" ]]; then
+            JUPYTERLAB_PASSWORD="<empty>"
+        else
+            JUPYTERLAB_PASSWORD=${myargs[$a]}
+        fi
+    ### Define JupyterLab system path ($LAB_PATH)
+    elif [[ $a == "--lab-path" ]]; then
+        if [[ ${myargs[$a]} == "" ]]; then
+            LAB_PATH=/opt/jupyterlab
+        elif [[ ${myargs[$a]} == "\$LAB_PATH" ]]; then
+            if [[ "${LAB_PATH-}" == "" ]]; then
+                echo "LAB_PATH is required."
+                exit 1
+            else
+                LAB_PATH="${LAB_PATH}"
+            fi
+        elif [[ ${myargs[$a]} =~ ^(/)?([^/\0]+(/)?)+$ ]]; then
+            LAB_PATH=${myargs[$a]}
+        else
+            echo "Invalid app path provided: ${myargs[$a]}"
+            exit 1
+        fi
+        echo "App path: $LAB_PATH"
+    ### Parse stages
+    elif [[ $a == "--stages" ]]; then
         if [[ -z ${myargs[$a]} ]]; then
             STAGES=("${!ALL_STAGES[@]}")
         else
@@ -338,27 +442,28 @@ for a in ${!myargs[@]}; do
                 echo "Invalid stage argument: ${myargs[$a]}"
                 exit 1
             fi
-            if [[ ${STAGES[@]} != ${!ALL_STAGES[@]} ]]; then
-                for stage in ${STAGES[@]}; do
-                    if [[ ! " ${!ALL_STAGES[@]} " =~ " ${stage} " ]]; then
-                        echo "Invalid stage: $stage"
-                        exit 1
-                    else
-                        STAGE_INDEXES+=("${ALL_STAGES[$stage]}")
-                        STAGE_INDEXES=($(printf "%s\n" "${STAGE_INDEXES[@]}" | sort -n))
-                    fi
-                done
-            fi
         fi
 
-        for i in ${STAGE_INDEXES[@]}; do
-            for stage in ${!ALL_STAGES[@]}; do
-                if [[ ${ALL_STAGES[$stage]} == $i ]]; then
-                    printf "Performing stage: %s\n" "$stage"
-                    # Run stage function
-                    $stage
-                fi
-            done
+        for stage in ${STAGES[@]}; do
+            if [[ ! " ${!ALL_STAGES[@]} " =~ " ${stage} " ]]; then
+                echo "Invalid stage: $stage"
+                exit 1
+            else
+                STAGE_INDEXES+=("${ALL_STAGES[$stage]}")
+            fi
         done
+
     fi
+done
+
+STAGE_INDEXES=($(printf "%s\n" "${STAGE_INDEXES[@]}" | sort -n))
+
+### Run stages
+for i in ${STAGE_INDEXES[@]}; do
+    for stage in ${!ALL_STAGES[@]}; do
+        if [[ ${ALL_STAGES[$stage]} == $i ]]; then
+            echo "Performing stage: $stage"
+            $stage
+        fi
+    done
 done
