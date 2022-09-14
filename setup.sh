@@ -25,7 +25,7 @@ set -e
 # TODO: Create motd
 
 # GLOBALS
-version='0.0.6alpha'
+version='0.0.6beta'
 IP=$(curl -sSL https://ipv4.icanhazip.com)
 
 declare -A ALL_STAGES=(
