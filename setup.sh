@@ -167,7 +167,7 @@ function build() {
     # Re-deploy JupyterLab
     bash -c "docker compose -f $LAB_PATH/docker-compose.yml down" || true
     bash -c "docker compose -f $LAB_PATH/docker-compose.yml up -d" &&
-        docker system prune -a -f && source $LAB_PATH/.env &&
+        bash -c "docker system prune -a -f" && source $LAB_PATH/.env &&
         echo "JupyterLab is running at $BIND_HOST:$PORT"
 }
 
