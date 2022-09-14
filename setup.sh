@@ -64,11 +64,11 @@ function prep() {
     fi
 
     # System packages
-    ## install updates
-    sudo dnf update -y
-
     ## remove some preinstalled garbage
     sudo dnf remove -y $(rpm -qa | grep cock)
+
+    ## install updates
+    sudo dnf update -y
 
     ## Install EPEL repo
     sudo dnf install -y oracle-epel-release-el9
@@ -139,7 +139,7 @@ function jupyter() {
             grep ACCESS_TOKEN)|" $LAB_PATH/.env
     else
         CURRENT_TOKEN=$(grep ACCESS_TOKEN $LAB_PATH/.env)
-        ORIG_TOKEN=$(grep ACCESS_TOKEN $./jupyter-docker/.env.example)
+        ORIG_TOKEN=$(grep ACCESS_TOKEN ./jupyter-docker/.env.example)
         if [[ "$CURRENT_TOKEN" == "$ORIG_TOKEN" ]]; then
             while [[ $JUPYTERLAB_PASSWORD == "<empty>" || $JUPYTERLAB_PASSWORD == "" ||
                 ! ${#JUPYTERLAB_PASSWORD} -ge 8 ]]; do
