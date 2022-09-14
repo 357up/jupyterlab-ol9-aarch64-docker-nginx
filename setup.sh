@@ -129,7 +129,7 @@ function jupyter() {
     sudo rsync -av --exclude ".git*" ./jupyter-docker/ $LAB_PATH
     test -f "$LAB_PATH/.env" && sudo rm -f $LAB_PATH/.env.example ||
         sudo cp $LAB_PATH/.env.example $LAB_PATH/.env &&
-        echo "Don't foget to update $($LAB_PATH/.env)"
+        echo "Don't foget to update $LAB_PATH/.env file"
     sudo chmod 600 $LAB_PATH/.env
     sudo chown -R $USER: $LAB_PATH
     # TODO: Update access key and other .env variables
