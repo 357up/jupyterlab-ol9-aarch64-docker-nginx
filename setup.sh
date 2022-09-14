@@ -322,7 +322,7 @@ function cleanup() {
 ### Install docopts if not already installed.
 ### http://docopt.org/
 DOCOPTS_LIB="https://raw.githubusercontent.com/docopt/docopts/master/docopts.sh"
-DOCOPTS_BIN="https://github.com/docopt/docopts/releases/latest/download/docopts_linux_arm4"
+DOCOPTS_BIN="https://github.com/docopt/docopts/releases/latest/download/docopts_linux_arm"
 
 test -f docopts.sh || wget $DOCOPTS_LIB
 test -x docopts || (wget -O docopts $DOCOPTS_BIN && chmod +x docopts)
