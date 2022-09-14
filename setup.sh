@@ -304,7 +304,7 @@ function cert() {
             grep location: | sed "s/^.*\/\(.*\)\r$/\1/g") &&
             wget -O acme.tar.gz \
                 https://github.com/acmesh-official/acme.sh/archive/refs/tags/$ACME_VERSION.tar.gz &&
-            tar -xzf acme.tar.gz && acme.sh-$ACME_VERSION/acme.sh --install --home $ACME_BIN_DIR \
+            tar -xzf acme.tar.gz && ./acme.sh-$ACME_VERSION/acme.sh --install --home $ACME_BIN_DIR \
             --config-home $ACME_BASE_DIR --cert-home $ACME_CERT_DIR --accountemail $EMAIL \
             --accountkey $ACME_CONF_DIR/myaccount.key --accountconf $ACME_CONF_DIR/myaccount.conf
     )
