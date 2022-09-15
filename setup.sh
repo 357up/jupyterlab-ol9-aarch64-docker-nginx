@@ -21,11 +21,10 @@
 #set -x
 set -e
 
-# TODO: Write README.md
 # TODO: Create motd
 
 # GLOBALS
-version='0.0.6beta'
+version='0.0.7beta'
 IP=$(curl -sSL https://ipv4.icanhazip.com)
 
 declare -A ALL_STAGES=(
