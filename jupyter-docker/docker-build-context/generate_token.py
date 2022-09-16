@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import IPython as IPython
+from jupyter_server.auth import passwd
 
 if __name__ == "__main__":
     print("Generate a access token")
@@ -14,5 +14,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     print("\nCopy this line into the .env file:\n")
-    hash = IPython.lib.passwd(args.password)
+    hash = passwd(args.password)
     print("ACCESS_TOKEN=" + hash)

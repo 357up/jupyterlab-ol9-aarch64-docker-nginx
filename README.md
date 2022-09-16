@@ -1,4 +1,4 @@
-# jupyterlab-ol9-aarch64-docker-nginx (great name, I know 😎)
+# jupyterlab-ol9-aarch64-docker-nginx <p>(great name, I know 😎)</p>
 
   Semi-automatically deploys JupyterLab to Oracle Cloud's VM.Standard.A1.Flex VM running Oracle Linux 9 (aarch64) using [docker-ce](https://www.docker.com/products/container-runtime/) as the container runtime, [Nginx](https://www.nginx.com/) as a reverse proxy, and awesome [acme.sh](https://github.com/acmesh-official/acme.sh) for TLS.
 

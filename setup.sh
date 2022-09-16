@@ -81,8 +81,6 @@ function prep() {
         policycoreutils-python-utils netcat bind-utils \
         wget curl unzip jq python3-pip
     
-    ## generate_token.py requires IPython 7.32.0 or older
-    python3 -m pip install --upgrade ipython==7.32.0
 }
 
 function docker() {
@@ -137,10 +135,26 @@ function jupyter() {
         echo "Don't foget to update $LAB_PATH/.env file"
     sudo chmod 600 $LAB_PATH/.env
     sudo chown -R $USER: $LAB_PATH
+    # Update JupyterLab path
+    grep "$LAB_PATH" $LAB_PATH/.env || sed -i "s|/opt/jupyterlab|$LAB_PATH|" $LAB_PATH/.env
+    # TODO: Make other .env variables configurable with this script
+
+    sudo chown -R 1000:1000 $LAB_PATH/{notebooks,datasets}
+}
+
+function build() {
+    function generate_token() {
+        bash -c "docker compose -f $LAB_PATH/docker-compose.yml run --rm datascience-notebook \
+            generate_token.py -p \"$0\"" | grep ACCESS_TOKEN
+    }
+    # Build docker image
+    bash -c "docker compose -f $LAB_PATH/docker-compose.yml build --pull"
+    # Spin down the container if it's running
+    bash -c "docker compose -f $LAB_PATH/docker-compose.yml down" || true
+
     # Update JupyterLab password
     if [[ $JUPYTERLAB_PASSWORD != "<empty>" ]]; then
-        sed -i "s|ACCESS_TOKEN=.*|$(./generate_token.py -p $JUPYTERLAB_PASSWORD |
-            grep ACCESS_TOKEN)|" $LAB_PATH/.env
+        sed -i "s|ACCESS_TOKEN=.*|$(generate_token \"$JUPYTERLAB_PASSWORD\")|" $LAB_PATH/.env
     else
         CURRENT_TOKEN=$(grep ACCESS_TOKEN $LAB_PATH/.env)
         ORIG_TOKEN=$(grep ACCESS_TOKEN ./jupyter-docker/.env.example)
@@ -150,23 +164,11 @@ function jupyter() {
                 echo "JupyterLab password wasn't specified or is too short. Enter the password now"
                 read -s JUPYTERLAB_PASSWORD
             done
-            sed -i "s|ACCESS_TOKEN=.*|$(./generate_token.py -p $JUPYTERLAB_PASSWORD |
-                grep ACCESS_TOKEN)|" $LAB_PATH/.env
+            sed -i "s|ACCESS_TOKEN=.*|$(generate_token \"$JUPYTERLAB_PASSWORD\")|" $LAB_PATH/.env
         fi
     fi
-    # Update JupyterLab path
-    grep "$LAB_PATH" $LAB_PATH/.env || sed -i "s|/opt/jupyterlab|$LAB_PATH|" $LAB_PATH/.env
-    # TODO: Make other .env variables configurable with this script
 
-    sudo chown -R 1000:1000 $LAB_PATH/{notebooks,datasets}
-}
-
-function build() {
-    # Build docker image
-
-    bash -c "docker compose -f $LAB_PATH/docker-compose.yml build --pull"
     # Re-deploy JupyterLab
-    bash -c "docker compose -f $LAB_PATH/docker-compose.yml down" || true
     bash -c "docker compose -f $LAB_PATH/docker-compose.yml up -d" &&
         bash -c "docker system prune -a -f" && source $LAB_PATH/.env &&
         echo "JupyterLab is running at $BIND_HOST:$PORT"

@@ -5,6 +5,7 @@ USER root
 
 RUN apt update && apt install -y zip unzip vim iproute2 iputils-ping netcat
 RUN apt clean && rm -rf /var/lib/apt/lists/*
+COPY --chown=root:root --chmod=755 generate_token.py /usr/local/bin/generate_token.py
 
 USER jovyan
 
