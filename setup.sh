@@ -56,15 +56,15 @@ function prep() {
     if [[ "$USER_PASSWORD" != "<empty>" ]]; then
         echo "$USER:$USER_PASSWORD" | sudo chpasswd
     else
-        if [[ $(sudo passwd -S $USER | grep "Password locked") ]]; then
+        if sudo passwd -S "$USER" | grep -q "Password locked"; then
             echo "Password for $USER wasn't specified. Enter the password now"
-            sudo passwd $USER
+            sudo passwd "$USER"
         fi
     fi
 
     # System packages
     ## remove some preinstalled garbage
-    sudo dnf remove -y $(rpm -qa | grep cock)
+    sudo dnf remove -y "$(rpm -qa | grep cock)"
 
     ## install updates
     sudo dnf update -y
@@ -108,8 +108,8 @@ function docker() {
     sudo systemctl enable --now docker
 
     ## Add user `$USER` to `docker` group
-    if [[ ! $(groups | grep docker) ]]; then
-        sudo usermod -a -G docker $USER
+    if ! groups | grep -q docker; then
+        sudo usermod -a -G docker "$USER"
     fi
 
     ## Allow ssh password authentication from docker subnets
@@ -126,18 +126,18 @@ function docker() {
 
 function jupyter() {
     # JupyterLab
-    sudo mkdir -p "$LAB_PATH"/{notebooks,datasets}
+    sudo mkdir -p "$LAB_PATH/{notebooks,datasets}"
     sudo rsync -av --exclude ".git*" ./jupyter-docker/ "$LAB_PATH"
-    test -f "$LAB_PATH/.env" && sudo rm -f "$LAB_PATH"/.env.example ||
-        sudo cp "$LAB_PATH"/.env.example "$LAB_PATH"/.env &&
-        echo "Don't foget to update "$LAB_PATH"/.env file"
-    sudo chmod 600 "$LAB_PATH"/.env
-    sudo chown -R $USER: "$LAB_PATH"
+    test -f "$LAB_PATH/.env" && sudo rm -f "$LAB_PATH/.env.example" ||
+        sudo cp "$LAB_PATH/.env.example" "$LAB_PATH/.env" &&
+        echo "Don't foget to update \"$LAB_PATH/.env\" file"
+    sudo chmod 600 "$LAB_PATH/.env"
+    sudo chown -R "$USER": "$LAB_PATH"
     # Update JupyterLab path
-    grep "$LAB_PATH" "$LAB_PATH"/.env || sed -i "s|/opt/jupyterlab|$LAB_PATH|" "$LAB_PATH"/.env
+    grep "$LAB_PATH" "$LAB_PATH/.env" || sed -i "s|/opt/jupyterlab|$LAB_PATH|" "$LAB_PATH/.env"
     # TODO: Make other .env variables configurable with this script
 
-    sudo chown -R 1000:1000 "$LAB_PATH"/{notebooks,datasets}
+    sudo chown -R 1000:1000 "$LAB_PATH/{notebooks,datasets}"
 }
 
 function build() {
@@ -145,13 +145,13 @@ function build() {
     # I have't found a way to update the user's group membership without logging out
     # `newgrp docker` breaks the script
     function generate_token() {
-        sudo docker compose -f "$LAB_PATH"/docker-compose.yml run \
+        sudo docker compose -f "$LAB_PATH/docker-compose.yml" run \
             --rm datascience-notebook generate_token.py -p "$1" | grep ACCESS_TOKEN
     }
     # Build docker image
-    sudo docker compose -f "$LAB_PATH"/docker-compose.yml build --pull
+    sudo docker compose -f "$LAB_PATH/docker-compose.yml" build --pull
     # Spin down the container if it's running
-    sudo docker compose -f "$LAB_PATH"/docker-compose.yml down || true
+    sudo docker compose -f "$LAB_PATH/docker-compose.yml" down || true
 
     # Update JupyterLab password
     if [[ "$JUPYTERLAB_PASSWORD" != "<empty>" ]]; then
@@ -162,7 +162,15 @@ function build() {
         if [[ "$CURRENT_TOKEN" == "$ORIG_TOKEN" ]]; then
             while [[ "$JUPYTERLAB_PASSWORD" == "<empty>" || "$JUPYTERLAB_PASSWORD" == "" ||
                 ! ${#JUPYTERLAB_PASSWORD} -ge 8 ]]; do
-                echo "JupyterLab password wasn't specified or is too short. Enter the password now"
+                echo "JupyterLab password wasn't specified or is too short."
+                echo
+                echo "  NOTE: Password will not be echoed to the screen while typing."
+                echo "  NOTE: Please don't use the same password as for the system user."
+                echo "  NOTE: Password must be at least 8 characters long."
+                echo -n "  NOTE: Please avoid using backslashes ( \\ ), quotes ( \` , ' , \" )"
+                echo " and dollar sign ( \$ ) in the password."
+                echo
+                echo "Enter the password now:"
                 read -s JUPYTERLAB_PASSWORD
             done
             sed -i "s|ACCESS_TOKEN=.*|$(generate_token "$JUPYTERLAB_PASSWORD")|" "$LAB_PATH"/.env
@@ -170,8 +178,8 @@ function build() {
     fi
 
     # Re-deploy JupyterLab
-    sudo docker compose -f "$LAB_PATH"/docker-compose.yml up -d &&
-        sudo docker system prune -a -f && source "$LAB_PATH"/.env &&
+    sudo docker compose -f "$LAB_PATH/docker-compose.yml" up -d &&
+        sudo docker system prune -a -f && source "$LAB_PATH/.env" &&
         echo "JupyterLab is running at $BIND_HOST:$PORT"
 }
 
@@ -180,8 +188,10 @@ function web() {
     ## Install
     ### Generate temporary self-signed certificate
     test -L "/etc/ssl/private" || sudo ln -s /etc/pki/tls/private /etc/ssl/
-    (test -f "/etc/ssl/private/default.key" &&
-        test -f "/etc/ssl/certs/default.pem") ||
+    {
+        test -f "/etc/ssl/private/default.key" &&
+            test -f "/etc/ssl/certs/default.pem"
+    } ||
         sudo openssl req -new -newkey rsa:2048 -days 3650 -nodes -x509 \
             -subj "/C=LV/ST=Riga/L=Riga/O=$(hostname)/CN=$(hostname)" \
             -keyout /etc/ssl/private/default.key \
@@ -196,55 +206,67 @@ function web() {
     ERR_URL="https://github.com/denysvitali/nginx-error-pages/archive/refs/heads/master.zip"
     ERR_PATH="nginx-error-pages-master"
     ERR_TARGET_PATH="/usr/share/nginx/html/nginx-error-pages"
-    test -d "$ERR_TARGET_PATH" || (wget $ERR_URL -O $ERR_PATH.zip &&
-        unzip $ERR_PATH -x \
-            "$ERR_PATH/Makefile" \
-            "$ERR_PATH/generate.py" \
-            "$ERR_PATH/Dockerfile" \
-            "$ERR_PATH/.dockerignore" \
-            "$ERR_PATH/LICENSE" \
-            "$ERR_PATH/README.md" \
-            "$ERR_PATH/screenshots/*" \
-            "$ERR_PATH/templates/*" \
-            "$ERR_PATH/snippets/*" \
-            "$ERR_PATH/conf/*" &&
-        sudo mv $ERR_PATH $ERR_TARGET_PATH &&
-        sudo ln -s $ERR_TARGET_PATH/_errors/main.css $ERR_TARGET_PATH)
+    test -d "$ERR_TARGET_PATH" || {
+        wget $ERR_URL -O $ERR_PATH.zip &&
+            unzip $ERR_PATH -x \
+                "$ERR_PATH/Makefile" \
+                "$ERR_PATH/generate.py" \
+                "$ERR_PATH/Dockerfile" \
+                "$ERR_PATH/.dockerignore" \
+                "$ERR_PATH/LICENSE" \
+                "$ERR_PATH/README.md" \
+                "$ERR_PATH/screenshots/*" \
+                "$ERR_PATH/templates/*" \
+                "$ERR_PATH/snippets/*" \
+                "$ERR_PATH/conf/*" &&
+            sudo mv $ERR_PATH $ERR_TARGET_PATH &&
+            sudo ln -s $ERR_TARGET_PATH/_errors/main.css $ERR_TARGET_PATH
+    }
     ### Install custom nginx config
     NGINX="/etc/nginx"
     DEFAULTD="$NGINX/default.d"
     CONFD="$NGINX/conf.d"
     test -d "$DEFAULTD" || sudo mkdir -p "$DEFAULTD"
     test -d "$CONFD" || sudo mkdir -p "$CONFD"
-    (test -f "$NGINX/nginx.conf" &&
-        cmp -s ./nginx/nginx.conf "$NGINX/nginx.conf") ||
+    {
+        test -f "$NGINX/nginx.conf" &&
+            cmp -s ./nginx/nginx.conf "$NGINX/nginx.conf"
+    } ||
         sudo cp ./nginx/nginx.conf "$NGINX/nginx.conf"
-    (test -f "$DEFAULTD/error-pages.conf" &&
-        cmp -s ./nginx/error-pages.conf "$DEFAULTD/error-pages.conf") ||
+    {
+        test -f "$DEFAULTD/error-pages.conf" &&
+            cmp -s ./nginx/error-pages.conf "$DEFAULTD/error-pages.conf"
+    } ||
         sudo cp ./nginx/error-pages.conf "$DEFAULTD/error-pages.conf"
-    (test -f "$DEFAULTD/ssl.conf" &&
-        cmp -s ./nginx/ssl.conf "$DEFAULTD/ssl.conf") ||
+    {
+        test -f "$DEFAULTD/ssl.conf" &&
+            cmp -s ./nginx/ssl.conf "$DEFAULTD/ssl.conf"
+    } ||
         sudo cp ./nginx/ssl.conf "$DEFAULTD/ssl.conf"
-    (test -f "$CONFD/jupyterlab.conf" &&
-        cmp -s ./nginx/jupyterlab.conf "$CONFD/jupyterlab.conf") ||
+    {
+        test -f "$CONFD/jupyterlab.conf" &&
+            cmp -s ./nginx/jupyterlab.conf "$CONFD/jupyterlab.conf"
+    } ||
         sudo cp ./nginx/jupyterlab.conf "$CONFD/jupyterlab.conf"
 
     ### Replace template values
-    source "$LAB_PATH"/.env
+    source "$LAB_PATH/.env"
     sudo sed -i "s|###BIND_HOST###|$BIND_HOST|g;s|###BIND_PORT###|$PORT|g;\
     s|###DOMAIN###|$DOMAIN|g" "$CONFD/jupyterlab.conf"
 
     ## Firewalld
-    (sudo firewall-cmd --permanent --zone=public --add-service=http &&
-        sudo firewall-cmd --permanent --zone=public --add-service=https &&
-        sudo firewall-cmd --reload) || true
+    {
+        sudo firewall-cmd --permanent --zone=public --add-service=http &&
+            sudo firewall-cmd --permanent --zone=public --add-service=https &&
+            sudo firewall-cmd --reload
+    } || true
 
     ## SELinux
     sudo setsebool -P httpd_can_network_relay 1 || true
     sudo setsebool -P httpd_can_network_connect 1 || true
 
     ## Temporary disable $CONFD/jupyterlab.conf when first run
-    test -f /etc/ssl/cert/$DOMAIN.combined.pem ||
+    test -f "/etc/ssl/cert/$DOMAIN.combined.pem" ||
         sudo mv "$CONFD/jupyterlab.conf" "$CONFD/jupyterlab.conf.disabled"
 
     ## Systemd
@@ -256,27 +278,27 @@ function dns() {
     # DNS
     # TODO: Implement automatic DNS configuration
     echo "ATENTION: Automatic DNS configuration is not implemented yet!"
-    dig +short $DOMAIN @1.1.1.1 | grep -q "$IP" || (
+    dig +short "$DOMAIN" @1.1.1.1 | grep -q "$IP" || {
         echo "DNS is not configured yet. Please configure it manually."
         echo "Set follwoing records:"
         echo "  \`$DOMAIN        3600   IN  A       $IP\`"
         echo "  \`www.$DOMAIN    3600   IN  CNAME   $DOMAIN\`"
         echo "See README.md for help."
         read -p "Press enter once DNS is configured"
-        dig +short $DOMAIN @1.1.1.1 | grep -q "$IP" || (
+        dig +short "$DOMAIN" @1.1.1.1 | grep -q "$IP" || {
             echo "Could not resolve $DOMAIN to $IP"
             echo "Please check DNS configuration and try again."
             sleep 5
             dns
-        )
-    )
+        }
+    }
 }
 
 function ingress() {
     # Security List (FireWall)
     # TODO: Implement automatic security list configuration
-    if [[ "$(curl -sSI http://$IP)" &&
-    "$(curl -sSIk https://$IP)" ]]; then
+    if [[ $(curl -sSI http://"$IP") &&
+    $(curl -sSIk https://"$IP") ]]; then
         echo "WARNING:"
         echo "  This check might produce false positives."
         echo "  Double check the Security List ingress rules for port 80 and 443."
@@ -289,8 +311,8 @@ function ingress() {
         echo "Please configure Security List ingress rules manually."
         echo "See README.md for help."
         read -p "Press enter once ingress is configured"
-        if [[ "$(curl -sSI http://$IP)" &&
-        "$(curl -sSIk https://$IP)" ]]; then
+        if [[ $(curl -sSI http://"$IP") &&
+        $(curl -sSIk https://"$IP") ]]; then
             echo "Ingress is configured"
         else
             echo "Could not connect to $IP:80 and $IP:443"
@@ -311,24 +333,24 @@ function cert() {
     sudo mkdir -p $ACME_BIN_DIR $ACME_CERT_DIR $ACME_CONF_DIR
     sudo chmod 750 $ACME_BASE_DIR
     sudo chown -R root:root $ACME_BASE_DIR
-    test -f "$ACME_BIN_DIR/acme.sh" || (
+    test -f "$ACME_BIN_DIR/acme.sh" || {
         ACME_VERSION=$(curl -IsS https://github.com/acmesh-official/acme.sh/releases/latest |
             grep location: | sed "s/^.*\/\(.*\)\r$/\1/g") &&
             wget -O acme.tar.gz \
-                https://github.com/acmesh-official/acme.sh/archive/refs/tags/$ACME_VERSION.tar.gz &&
-            tar -xzf acme.tar.gz && cd ./acme.sh-$ACME_VERSION && sudo ./acme.sh --force --install --home $ACME_BIN_DIR \
-            --config-home $ACME_BASE_DIR --cert-home $ACME_CERT_DIR --accountemail $EMAIL \
-            --accountkey $ACME_CONF_DIR/myaccount.key --accountconf $ACME_CONF_DIR/myaccount.conf && cd ..
-    )
+                "https://github.com/acmesh-official/acme.sh/archive/refs/tags/$ACME_VERSION.tar.gz" &&
+            tar -xzf acme.tar.gz && cd "./acme.sh-$ACME_VERSION" && sudo ./acme.sh --force --install --home "$ACME_BIN_DIR" \
+            --config-home "$ACME_BASE_DIR" --cert-home "$ACME_CERT_DIR" --accountemail "$EMAIL" \
+            --accountkey "$ACME_CONF_DIR/myaccount.key" --accountconf "$ACME_CONF_DIR/myaccount.conf" && cd ..
+    }
 
     # Issue certificate if not issued already
-    sudo test -d "$ACME_CERT_DIR/$DOMAIN" || (
-        sudo $ACME_BIN_DIR/acme.sh --home $ACME_BIN_DIR --config-home $ACME_BASE_DIR \
-            --force --issue -d $DOMAIN -d www.$DOMAIN -w /usr/share/nginx/html \
-            --key-file /etc/ssl/private/$DOMAIN.key --cert-file /etc/ssl/certs/$DOMAIN.crt \
-            --ca-file /etc/ssl/certs/$DOMAIN.cacrt --fullchain-file /etc/ssl/certs/$DOMAIN.combined.pem \
+    sudo test -d "$ACME_CERT_DIR/$DOMAIN" || {
+        sudo "$ACME_BIN_DIR/acme.sh" --home "$ACME_BIN_DIR" --config-home "$ACME_BASE_DIR" \
+            --force --issue -d "$DOMAIN" -d www."$DOMAIN" -w /usr/share/nginx/html \
+            --key-file "/etc/ssl/private/$DOMAIN.key" --cert-file "/etc/ssl/certs/$DOMAIN.crt" \
+            --ca-file "/etc/ssl/certs/$DOMAIN.cacrt" --fullchain-file "/etc/ssl/certs/$DOMAIN.combined.pem" \
             --reloadcmd "systemctl reload nginx"
-    )
+    }
 
     # Enable jupyterlab.conf
     test -f "$CONFD/jupyterlab.conf.disabled" &&
@@ -355,7 +377,7 @@ test -x docopts || (wget -O docopts "$DOCOPTS_BIN" && chmod +x docopts)
 PATH=.:$PATH
 source docopts.sh
 
-help=$(docopt_get_help_string $0)
+help=$(docopt_get_help_string "$0")
 
 ### Parse arguments.
 parsed=$(docopts -A myargs -h "$help" -V $version : "$@")
@@ -364,7 +386,7 @@ eval "$parsed"
 set -u
 
 if [[ ${myargs["-l"]} == 1 ]]; then
-    echo "Available stages: ${!ALL_STAGES[@]}"
+    echo "Available stages: ${!ALL_STAGES[*]}"
     exit 0
 fi
 
@@ -382,8 +404,6 @@ for a in "${!myargs[@]}"; do
             if [[ "${DOMAIN-}" == "" ]]; then
                 echo "Domain is required."
                 exit 1
-            else
-                DOMAIN="${DOMAIN}"
             fi
         elif [[ "${myargs[$a]}" =~ ^[a-zA-Z0-9.-]+$ ]]; then
             DOMAIN="${myargs[$a]}"
@@ -398,8 +418,6 @@ for a in "${!myargs[@]}"; do
             if [[ "${EMAIL-}" == "" ]]; then
                 echo "Email address is required."
                 exit 1
-            else
-                EMAIL="${EMAIL}"
             fi
         elif [[ ${myargs[$a]} =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+(\.[A-Za-z]+)*$ ]]; then
             EMAIL="${myargs[$a]}"
@@ -435,13 +453,11 @@ for a in "${!myargs[@]}"; do
     ### Define JupyterLab system path ($LAB_PATH)
     elif [[ $a == "--lab-path" ]]; then
         if [[ ${myargs[$a]} == "" ]]; then
-            LAB_PATH=/opt/jupyterlab
+            LAB_PATH="/opt/jupyterlab"
         elif [[ "${myargs[$a]}" == "\$LAB_PATH" ]]; then
             if [[ "${LAB_PATH-}" == "" ]]; then
                 echo "LAB_PATH is required."
                 exit 1
-            else
-                LAB_PATH="${LAB_PATH}"
             fi
         elif [[ ${myargs[$a]} =~ ^(/)?([^/\0]+(/)?)+$ ]]; then
             LAB_PATH="${myargs[$a]}"
@@ -455,16 +471,16 @@ for a in "${!myargs[@]}"; do
         if [[ -z ${myargs[$a]} ]]; then
             STAGES=("${!ALL_STAGES[@]}")
         else
-            if [[ $(echo -n "${myargs[$a]}" |
-                grep -P '^(all(,|$))?(-(?!all)[a-z]+,?)*$') ]]; then
+            if echo -n "${myargs[$a]}" |
+                grep -qP '^(all(,|$))?(-(?!all)[a-z]+,?)*$'; then
                 splitStages
                 for stage in "${STAGES[@]}"; do
                     EXCLUDE+=("${stage[@]:1}")
                 done
                 STAGES=($(comm -3 <(printf "%s\n" "${!ALL_STAGES[@]}" |
                     sort) <(printf "%s\n" "${EXCLUDE[@]}" | sort) | sort -n))
-            elif [[ $(echo -n "${myargs[$a]}" |
-                grep -P '^(-all(,|$))?((?!all)[a-z]+,?)*$') ]]; then
+            elif echo -n "${myargs[$a]}" |
+                grep -qP '^(-all(,|$))?((?!all)[a-z]+,?)*$'; then
                 splitStages
             else
                 echo "Invalid stage argument: ${myargs[$a]}"
@@ -472,8 +488,8 @@ for a in "${!myargs[@]}"; do
             fi
         fi
 
-        for stage in ${STAGES[@]}; do
-            if [[ ! " ${!ALL_STAGES[@]} " =~ " ${stage} " ]]; then
+        for stage in "${STAGES[@]}"; do
+            if [[ ! "${!ALL_STAGES[*]}" =~ ${stage} ]]; then
                 echo "Invalid stage: $stage"
                 exit 1
             else
@@ -487,9 +503,9 @@ done
 STAGE_INDEXES=($(printf "%s\n" "${STAGE_INDEXES[@]}" | sort -n))
 
 ### Run stages
-for i in ${STAGE_INDEXES[@]}; do
+for i in "${STAGE_INDEXES[@]}"; do
     for stage in "${!ALL_STAGES[@]}"; do
-        if [[ ${ALL_STAGES[$stage]} == $i ]]; then
+        if [[ ${ALL_STAGES[$stage]} == "$i" ]]; then
             echo "Performing stage: $stage"
             sleep 3
             $stage
@@ -499,7 +515,7 @@ done
 
 sleep 7
 
-if [[ $(curl -sSI https://$DOMAIN) ]]; then
+if [[ $(curl -sSI https://"$DOMAIN") ]]; then
     echo "Your JupyterLab instance is ready at https://$DOMAIN"
 else
     echo "Something went wrong. Please check the logs."
