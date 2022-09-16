@@ -55,5 +55,3 @@ RUN jupyter labextension install jupyterlab-theme-solarized-dark \
 RUN jupyter labextension install --clean plotlywidget \
     && jupyter labextension enable plotlywidget \
     && pip3 install --no-cache-dir plotly ipywidgets kaleido
-
-RUN echo "$(jupyter labextension list)"
