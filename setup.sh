@@ -493,7 +493,9 @@ for i in ${STAGE_INDEXES[@]}; do
     done
 done
 
-if [[ $(curl -sSI https://$DOMAIN) ]]; then
+sleep 7
+
+if [[ $(curl --fail -sSI https://$DOMAIN) ]]; then
     echo "Your JupyterLab instance is ready at https://$DOMAIN"
 else
     echo "Something went wrong. Please check the logs."
