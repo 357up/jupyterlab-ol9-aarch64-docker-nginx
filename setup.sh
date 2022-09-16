@@ -281,7 +281,7 @@ function ingress() {
         echo "  This check might produce false positives."
         echo "  Double check the Security List ingress rules for port 80 and 443."
         echo
-        echo "Inbound ports 80 and 443 seem to be open. Continueing execution."
+        echo "Inbound ports 80 and 443 seem to be open. Continuing execution."
         echo "Press Ctrl+C to abort."
         sleep 10
     else
