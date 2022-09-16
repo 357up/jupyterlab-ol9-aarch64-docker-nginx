@@ -146,7 +146,7 @@ function build() {
     # `newgrp docker` breaks the script
     function generate_token() {
         sudo docker compose -f "$LAB_PATH"/docker-compose.yml run \
-        --rm datascience-notebook generate_token.py -p "$1" | grep ACCESS_TOKEN
+            --rm datascience-notebook generate_token.py -p "$1" | grep ACCESS_TOKEN
     }
     # Build docker image
     sudo docker compose -f "$LAB_PATH"/docker-compose.yml build --pull
@@ -346,8 +346,8 @@ function cleanup() {
 DOCOPTS_LIB="https://raw.githubusercontent.com/docopt/docopts/master/docopts.sh"
 DOCOPTS_BIN="https://github.com/docopt/docopts/releases/latest/download/docopts_linux_arm"
 
-test -f docopts.sh || wget $DOCOPTS_LIB
-test -x docopts || (wget -O docopts $DOCOPTS_BIN && chmod +x docopts)
+test -f docopts.sh || wget "$DOCOPTS_LIB"
+test -x docopts || (wget -O docopts "$DOCOPTS_BIN" && chmod +x docopts)
 ### Initialize docopts.
 PATH=.:$PATH
 source docopts.sh
@@ -366,32 +366,32 @@ if [[ ${myargs["-l"]} == 1 ]]; then
 fi
 
 ## Main logic
-for a in ${!myargs[@]}; do
+for a in "${!myargs[@]}"; do
     #echo "$a = ${myargs[$a]}"
     ### Set variables from arguments
     # TODO: Make sure that arguments are really required when stage filter is applied
     #### Define JupyterLab domain ($DOMAIN)
-    if [[ $a == "--domain" ]]; then
-        if [[ ${myargs[$a]} == "" ]]; then
+    if [[ "$a" == "--domain" ]]; then
+        if [[ "${myargs[$a]}" == "" ]]; then
             echo "Domain name is required."
             exit 1
-        elif [[ ${myargs[$a]} == "\$DOMAIN" ]]; then
+        elif [[ "${myargs[$a]}" == "\$DOMAIN" ]]; then
             if [[ "${DOMAIN-}" == "" ]]; then
                 echo "Domain is required."
                 exit 1
             else
                 DOMAIN="${DOMAIN}"
             fi
-        elif [[ ${myargs[$a]} =~ ^[a-zA-Z0-9.-]+$ ]]; then
-            DOMAIN=${myargs[$a]}
+        elif [[ "${myargs[$a]}" =~ ^[a-zA-Z0-9.-]+$ ]]; then
+            DOMAIN="${myargs[$a]}"
         else
             echo "Invalid domain name provided: ${myargs[$a]}"
             exit 1
         fi
         echo "Domain: $DOMAIN"
     #### Define acme.sh account email ($EMAIL)
-    elif [[ $a == "--email" ]]; then
-        if [[ ${myargs[$a]} == "\$EMAIL" ]]; then
+    elif [[ "$a" == "--email" ]]; then
+        if [[ "${myargs[$a]}" == "\$EMAIL" ]]; then
             if [[ "${EMAIL-}" == "" ]]; then
                 echo "Email address is required."
                 exit 1
@@ -399,14 +399,14 @@ for a in ${!myargs[@]}; do
                 EMAIL="${EMAIL}"
             fi
         elif [[ ${myargs[$a]} =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+(\.[A-Za-z]+)*$ ]]; then
-            EMAIL=${myargs[$a]}
+            EMAIL="${myargs[$a]}"
         else
             echo "Invalid email address."
         fi
         echo "Email: $EMAIL"
     #### Define system user ($USER)
-    elif [[ $a == "--system-user" ]]; then
-        if [[ ${myargs[$a]} == "" || ${myargs[$a]} == "opc" ]]; then
+    elif [[ "$a" == "--system-user" ]]; then
+        if [[ "${myargs[$a]}" == "" || "${myargs[$a]}" == "opc" ]]; then
             USER=opc
         elif [[ ${myargs[$a]} =~ ^[a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}\$)$ ]]; then
             USER=${myargs[$a]}
@@ -416,24 +416,24 @@ for a in ${!myargs[@]}; do
         fi
         echo "System user: $USER"
     #### Define system user's password ($USER_PASSWORD)
-    elif [[ $a == "--system-user-password" ]]; then
+    elif [[ "$a" == "--system-user-password" ]]; then
         if [[ ${myargs[$a]} == "" ]]; then
             USER_PASSWORD="<empty>"
         else
-            USER_PASSWORD=${myargs[$a]}
+            USER_PASSWORD="${myargs[$a]}"
         fi
     ### Define JupyterLab password ($JUPYTERLAB_PASSWORD)
     elif [[ $a == "--jupyterlab-password" ]]; then
         if [[ ${myargs[$a]} == "" ]]; then
             JUPYTERLAB_PASSWORD="<empty>"
         else
-            JUPYTERLAB_PASSWORD=${myargs[$a]}
+            JUPYTERLAB_PASSWORD="${myargs[$a]}"
         fi
     ### Define JupyterLab system path ($LAB_PATH)
     elif [[ $a == "--lab-path" ]]; then
         if [[ ${myargs[$a]} == "" ]]; then
             LAB_PATH=/opt/jupyterlab
-        elif [[ ${myargs[$a]} == "\$LAB_PATH" ]]; then
+        elif [[ "${myargs[$a]}" == "\$LAB_PATH" ]]; then
             if [[ "${LAB_PATH-}" == "" ]]; then
                 echo "LAB_PATH is required."
                 exit 1
@@ -441,7 +441,7 @@ for a in ${!myargs[@]}; do
                 LAB_PATH="${LAB_PATH}"
             fi
         elif [[ ${myargs[$a]} =~ ^(/)?([^/\0]+(/)?)+$ ]]; then
-            LAB_PATH=${myargs[$a]}
+            LAB_PATH="${myargs[$a]}"
         else
             echo "Invalid app path provided: ${myargs[$a]}"
             exit 1
@@ -455,7 +455,7 @@ for a in ${!myargs[@]}; do
             if [[ $(echo -n "${myargs[$a]}" |
                 grep -P '^(all(,|$))?(-(?!all)[a-z]+,?)*$') ]]; then
                 splitStages
-                for stage in ${STAGES[@]}; do
+                for stage in "${STAGES[@]}"; do
                     EXCLUDE+=("${stage[@]:1}")
                 done
                 STAGES=($(comm -3 <(printf "%s\n" "${!ALL_STAGES[@]}" |
@@ -485,7 +485,7 @@ STAGE_INDEXES=($(printf "%s\n" "${STAGE_INDEXES[@]}" | sort -n))
 
 ### Run stages
 for i in ${STAGE_INDEXES[@]}; do
-    for stage in ${!ALL_STAGES[@]}; do
+    for stage in "${!ALL_STAGES[@]}"; do
         if [[ ${ALL_STAGES[$stage]} == $i ]]; then
             echo "Performing stage: $stage"
             $stage
