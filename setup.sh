@@ -495,7 +495,7 @@ done
 
 sleep 7
 
-if [[ $(curl --fail -sSI https://$DOMAIN) ]]; then
+if [[ $(curl --fail --output /dev/null -sS https://$DOMAIN) ]]; then
     echo "Your JupyterLab instance is ready at https://$DOMAIN"
 else
     echo "Something went wrong. Please check the logs."
