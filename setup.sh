@@ -110,8 +110,6 @@ function docker() {
     ## Add user `$USER` to `docker` group
     if [[ ! $(groups | grep docker) ]]; then
         sudo usermod -a -G docker $USER
-        ## Activate the new group membership
-        newgrp docker
     fi
 
     ## Allow ssh password authentication from docker subnets
