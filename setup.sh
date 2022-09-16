@@ -53,7 +53,7 @@ function splitStages() {
 
 function prep() {
     # Set authentication password for the system user
-    if [[ $USER_PASSWORD != "<empty>" ]]; then
+    if [[ "$USER_PASSWORD" != "<empty>" ]]; then
         echo "$USER:$USER_PASSWORD" | sudo chpasswd
     else
         if [[ $(sudo passwd -S $USER | grep "Password locked") ]]; then
@@ -80,7 +80,7 @@ function prep() {
     sudo dnf install -y vim git htop ncdu ansible-core \
         policycoreutils-python-utils netcat bind-utils \
         wget curl unzip jq python3-pip
-    
+
 }
 
 function docker() {
@@ -126,18 +126,18 @@ function docker() {
 
 function jupyter() {
     # JupyterLab
-    sudo mkdir -p $LAB_PATH/{notebooks,datasets}
-    sudo rsync -av --exclude ".git*" ./jupyter-docker/ $LAB_PATH
-    test -f "$LAB_PATH/.env" && sudo rm -f $LAB_PATH/.env.example ||
-        sudo cp $LAB_PATH/.env.example $LAB_PATH/.env &&
-        echo "Don't foget to update $LAB_PATH/.env file"
-    sudo chmod 600 $LAB_PATH/.env
-    sudo chown -R $USER: $LAB_PATH
+    sudo mkdir -p "$LAB_PATH"/{notebooks,datasets}
+    sudo rsync -av --exclude ".git*" ./jupyter-docker/ "$LAB_PATH"
+    test -f "$LAB_PATH/.env" && sudo rm -f "$LAB_PATH"/.env.example ||
+        sudo cp "$LAB_PATH"/.env.example "$LAB_PATH"/.env &&
+        echo "Don't foget to update "$LAB_PATH"/.env file"
+    sudo chmod 600 "$LAB_PATH"/.env
+    sudo chown -R $USER: "$LAB_PATH"
     # Update JupyterLab path
-    grep "$LAB_PATH" $LAB_PATH/.env || sed -i "s|/opt/jupyterlab|$LAB_PATH|" $LAB_PATH/.env
+    grep "$LAB_PATH" "$LAB_PATH"/.env || sed -i "s|/opt/jupyterlab|$LAB_PATH|" "$LAB_PATH"/.env
     # TODO: Make other .env variables configurable with this script
 
-    sudo chown -R 1000:1000 $LAB_PATH/{notebooks,datasets}
+    sudo chown -R 1000:1000 "$LAB_PATH"/{notebooks,datasets}
 }
 
 function build() {
@@ -145,33 +145,33 @@ function build() {
     # I have't found a way to update the user's group membership without logging out
     # `newgrp docker` breaks the script
     function generate_token() {
-        sudo docker compose -f $LAB_PATH/docker-compose.yml run --rm datascience-notebook \
-            generate_token.py -p "$0" | grep ACCESS_TOKEN
+        sudo docker compose -f "$LAB_PATH"/docker-compose.yml run \
+        --rm datascience-notebook generate_token.py -p "$1" | grep ACCESS_TOKEN
     }
     # Build docker image
-    sudo docker compose -f $LAB_PATH/docker-compose.yml build --pull
+    sudo docker compose -f "$LAB_PATH"/docker-compose.yml build --pull
     # Spin down the container if it's running
-    sudo docker compose -f $LAB_PATH/docker-compose.yml down || true
+    sudo docker compose -f "$LAB_PATH"/docker-compose.yml down || true
 
     # Update JupyterLab password
-    if [[ $JUPYTERLAB_PASSWORD != "<empty>" ]]; then
-        sed -i "s|ACCESS_TOKEN=.*|$(generate_token \"$JUPYTERLAB_PASSWORD\")|" $LAB_PATH/.env
+    if [[ "$JUPYTERLAB_PASSWORD" != "<empty>" ]]; then
+        sed -i "s|ACCESS_TOKEN=.*|$(generate_token "$JUPYTERLAB_PASSWORD")|" "$LAB_PATH"/.env
     else
-        CURRENT_TOKEN=$(grep ACCESS_TOKEN $LAB_PATH/.env)
+        CURRENT_TOKEN=$(grep ACCESS_TOKEN "$LAB_PATH"/.env)
         ORIG_TOKEN=$(grep ACCESS_TOKEN ./jupyter-docker/.env.example)
         if [[ "$CURRENT_TOKEN" == "$ORIG_TOKEN" ]]; then
-            while [[ $JUPYTERLAB_PASSWORD == "<empty>" || $JUPYTERLAB_PASSWORD == "" ||
+            while [[ "$JUPYTERLAB_PASSWORD" == "<empty>" || "$JUPYTERLAB_PASSWORD" == "" ||
                 ! ${#JUPYTERLAB_PASSWORD} -ge 8 ]]; do
                 echo "JupyterLab password wasn't specified or is too short. Enter the password now"
                 read -s JUPYTERLAB_PASSWORD
             done
-            sed -i "s|ACCESS_TOKEN=.*|$(generate_token \"$JUPYTERLAB_PASSWORD\")|" $LAB_PATH/.env
+            sed -i "s|ACCESS_TOKEN=.*|$(generate_token "$JUPYTERLAB_PASSWORD")|" "$LAB_PATH"/.env
         fi
     fi
 
     # Re-deploy JupyterLab
-    sudo docker compose -f $LAB_PATH/docker-compose.yml up -d &&
-        sudo docker system prune -a -f && source $LAB_PATH/.env &&
+    sudo docker compose -f "$LAB_PATH"/docker-compose.yml up -d &&
+        sudo docker system prune -a -f && source "$LAB_PATH"/.env &&
         echo "JupyterLab is running at $BIND_HOST:$PORT"
 }
 
@@ -230,7 +230,7 @@ function web() {
         sudo cp ./nginx/jupyterlab.conf "$CONFD/jupyterlab.conf"
 
     ### Replace template values
-    source $LAB_PATH/.env
+    source "$LAB_PATH"/.env
     sudo sed -i "s|###BIND_HOST###|$BIND_HOST|g;s|###BIND_PORT###|$PORT|g;\
     s|###DOMAIN###|$DOMAIN|g" "$CONFD/jupyterlab.conf"
 
@@ -317,7 +317,7 @@ function cert() {
             --config-home $ACME_BASE_DIR --cert-home $ACME_CERT_DIR --accountemail $EMAIL \
             --accountkey $ACME_CONF_DIR/myaccount.key --accountconf $ACME_CONF_DIR/myaccount.conf && cd ..
     )
-    
+
     # Issue certificate if not issued already
     sudo test -d "$ACME_CERT_DIR/$DOMAIN" || (
         sudo $ACME_BIN_DIR/acme.sh --home $ACME_BIN_DIR --config-home $ACME_BASE_DIR \
@@ -326,12 +326,11 @@ function cert() {
             --ca-file /etc/ssl/certs/$DOMAIN.cacrt --fullchain-file /etc/ssl/certs/$DOMAIN.combined.pem \
             --reloadcmd "systemctl reload nginx"
     )
-    
+
     # Enable jupyterlab.conf
     test -f "$CONFD/jupyterlab.conf.disabled" &&
         sudo mv "$CONFD/jupyterlab.conf.disabled" "$CONFD/jupyterlab.conf" &&
         sudo nginx -t && sudo systemctl reload nginx
-    
 
 }
 
@@ -496,6 +495,6 @@ done
 
 if [[ $(curl -sSI https://$DOMAIN) ]]; then
     echo "Your JupyterLab instance is ready at https://$DOMAIN"
-else 
+else
     echo "Something went wrong. Please check the logs."
 fi
