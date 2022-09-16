@@ -142,13 +142,13 @@ function jupyter() {
 
 function build() {
     function generate_token() {
-        bash -c "docker compose -f $LAB_PATH/docker-compose.yml run --rm datascience-notebook \
-            generate_token.py -p \"$0\"" | grep ACCESS_TOKEN
+        sudo docker compose -f $LAB_PATH/docker-compose.yml run --rm datascience-notebook \
+            generate_token.py -p "$0" | grep ACCESS_TOKEN
     }
     # Build docker image
-    bash -c "docker compose -f $LAB_PATH/docker-compose.yml build --pull"
+    sudo docker compose -f $LAB_PATH/docker-compose.yml build --pull
     # Spin down the container if it's running
-    bash -c "docker compose -f $LAB_PATH/docker-compose.yml down" || true
+    sudo docker compose -f $LAB_PATH/docker-compose.yml down || true
 
     # Update JupyterLab password
     if [[ $JUPYTERLAB_PASSWORD != "<empty>" ]]; then
@@ -167,8 +167,8 @@ function build() {
     fi
 
     # Re-deploy JupyterLab
-    bash -c "docker compose -f $LAB_PATH/docker-compose.yml up -d" &&
-        bash -c "docker system prune -a -f" && source $LAB_PATH/.env &&
+    sudo docker compose -f $LAB_PATH/docker-compose.yml up -d &&
+        sudo docker system prune -a -f && source $LAB_PATH/.env &&
         echo "JupyterLab is running at $BIND_HOST:$PORT"
 }
 
