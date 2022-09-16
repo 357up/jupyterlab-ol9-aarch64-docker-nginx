@@ -141,7 +141,7 @@ function jupyter() {
 }
 
 function build() {
-    # Stage uses sudo, becase without sudo docker-compose will fail on first run
+    # Stage uses sudo, because without sudo docker-compose will fail on first run
     # I have't found a way to update the user's group membership without logging out
     # `newgrp docker` breaks the script
     function generate_token() {
