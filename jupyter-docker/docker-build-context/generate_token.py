@@ -15,4 +15,4 @@ if __name__ == "__main__":
 
     print("\nCopy this line into the .env file:\n")
     hash = passwd(args.password)
-    print(r"ACCESS_TOKEN=\"{hash}\"")
+    print(f"ACCESS_TOKEN=\"{hash}\"")
