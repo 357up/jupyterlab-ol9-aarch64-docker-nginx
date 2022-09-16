@@ -361,16 +361,18 @@ eval "$parsed"
 
 set -u
 
+if [[ ${myargs["-l"]} == 1 ]]; then
+    echo "Available stages: ${!ALL_STAGES[@]}"
+    exit 0
+fi
+
 ## Main logic
 for a in ${!myargs[@]}; do
     #echo "$a = ${myargs[$a]}"
     ### Set variables from arguments
     # TODO: Make sure that arguments are really required when stage filter is applied
-    if [[ $a == "-l" && ${myargs[$a]} == 1 ]]; then
-        echo "Available stages: ${!ALL_STAGES[@]}"
-        exit 0
     #### Define JupyterLab domain ($DOMAIN)
-    elif [[ $a == "--domain" ]]; then
+    if [[ $a == "--domain" ]]; then
         if [[ ${myargs[$a]} == "" ]]; then
             echo "Domain name is required."
             exit 1
