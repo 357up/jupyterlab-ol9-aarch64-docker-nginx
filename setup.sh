@@ -490,6 +490,7 @@ for i in ${STAGE_INDEXES[@]}; do
     for stage in "${!ALL_STAGES[@]}"; do
         if [[ ${ALL_STAGES[$stage]} == $i ]]; then
             echo "Performing stage: $stage"
+            sleep 3
             $stage
         fi
     done
