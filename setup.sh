@@ -275,28 +275,29 @@ function dns() {
 function ingress() {
     # Security List (FireWall)
     # TODO: Implement automatic security list configuration
-    if [[ $(curl --fail -sS http://$IP) &&
-    $(curl --fail -sSk https://$IP) ]]; then
+    if [[ "$(curl -sSI http://$IP)" &&
+    "$(curl -sSIk https://$IP)" ]]; then
         echo "WARNING:"
         echo "  This check might produce false positives."
         echo "  Double check the Security List ingress rules for port 80 and 443."
         echo
-        echo "Inbound ports 80 and 443 seem to be open."
-        read -p "Press enter to continue"
+        echo "Inbound ports 80 and 443 seem to be open. Continueing execution."
+        echo "Press Ctrl+C to abort."
+        sleep 10
     else
         echo "Inbound ports 80 and 443 seem to be closed."
         echo "Please configure Security List ingress rules manually."
         echo "See README.md for help."
         read -p "Press enter once ingress is configured"
-        if [[ $(curl --fail --output /dev/null -sS http://$IP) &&
-        $(curl --fail --output /dev/null -sSk https://$IP) ]]; then
+        if [[ "$(curl -sSI http://$IP)" &&
+        "$(curl -sSIk https://$IP)" ]]; then
             echo "Ingress is configured"
         else
             echo "Could not connect to $IP:80 and $IP:443"
             echo "This stage might produce false positives."
             echo "Presuming false positive and continuing execution."
             echo "Press Ctrl+C to abort."
-            sleep 5
+            sleep 10
         fi
     fi
 }
@@ -498,7 +499,7 @@ done
 
 sleep 7
 
-if [[ $(curl --fail -sS https://$DOMAIN) ]]; then
+if [[ $(curl -sSI https://$DOMAIN) ]]; then
     echo "Your JupyterLab instance is ready at https://$DOMAIN"
 else
     echo "Something went wrong. Please check the logs."
