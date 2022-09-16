@@ -22,7 +22,12 @@ services:
         --ServerApp.trust_xheaders=True \
         --ServerApp.allow_remote_access=True \
         --ServerApp.quit_button=False"
-
+      healthcheck:
+        test: curl --fail http://localhost:8888 || exit 1
+        interval: 60s
+        retries: 5
+        start_period: 180s
+        timeout: 12s
 networks:
   jupyter:
     driver: bridge
