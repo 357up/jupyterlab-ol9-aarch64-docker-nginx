@@ -275,7 +275,8 @@ function dns() {
 function ingress() {
     # Security List (FireWall)
     # TODO: Implement automatic security list configuration
-    if [[ $(nc -z $IP 80) && $(nc -z $IP 443) ]]; then
+    if [[ $(curl --fail --output /dev/null -sS http://$IP) &&
+    $(curl --fail --output /dev/null -sSk https://$IP) ]]; then
         echo "WARNING:"
         echo "  This check might produce false positives."
         echo "  Double check the Security List ingress rules for port 80 and 443."
@@ -287,7 +288,8 @@ function ingress() {
         echo "Please configure Security List ingress rules manually."
         echo "See README.md for help."
         read -p "Press enter once ingress is configured"
-        if [[ $(nc -z $IP 80) && $(nc -z $IP 443) ]]; then
+        if [[ $(curl --fail --output /dev/null -sS http://$IP) &&
+        $(curl --fail --output /dev/null -sSk https://$IP) ]]; then
             echo "Ingress is configured"
         else
             echo "Could not connect to $IP:80 and $IP:443"
