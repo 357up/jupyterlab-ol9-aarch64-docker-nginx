@@ -126,7 +126,7 @@ function docker() {
 
 function jupyter() {
     # JupyterLab
-    sudo mkdir -p "$LAB_PATH/{notebooks,datasets}"
+    sudo mkdir -p "$LAB_PATH"/{notebooks,datasets}
     sudo rsync -av --exclude ".git*" ./jupyter-docker/ "$LAB_PATH"
     test -f "$LAB_PATH/.env" && sudo rm -f "$LAB_PATH/.env.example" ||
         sudo cp "$LAB_PATH/.env.example" "$LAB_PATH/.env" &&
@@ -137,7 +137,7 @@ function jupyter() {
     grep "$LAB_PATH" "$LAB_PATH/.env" || sed -i "s|/opt/jupyterlab|$LAB_PATH|" "$LAB_PATH/.env"
     # TODO: Make other .env variables configurable with this script
 
-    sudo chown -R 1000:1000 "$LAB_PATH/{notebooks,datasets}"
+    sudo chown -R 1000:1000 "$LAB_PATH"/{notebooks,datasets}
 }
 
 function build() {
@@ -145,13 +145,13 @@ function build() {
     # I have't found a way to update the user's group membership without logging out
     # `newgrp docker` breaks the script
     function generate_token() {
-        sudo docker compose -f "$LAB_PATH/docker-compose.yml" run \
+        sudo "docker" compose -f "$LAB_PATH/docker-compose.yml" run \
             --rm datascience-notebook generate_token.py -p "$1" | grep ACCESS_TOKEN
     }
     # Build docker image
-    sudo docker compose -f "$LAB_PATH/docker-compose.yml" build --pull
+    sudo "docker" compose -f "$LAB_PATH/docker-compose.yml" build --pull
     # Spin down the container if it's running
-    sudo docker compose -f "$LAB_PATH/docker-compose.yml" down || true
+    sudo "docker" compose -f "$LAB_PATH/docker-compose.yml" down || true
 
     # Update JupyterLab password
     if [[ "$JUPYTERLAB_PASSWORD" != "<empty>" ]]; then
@@ -167,19 +167,17 @@ function build() {
                 echo "  NOTE: Password will not be echoed to the screen while typing."
                 echo "  NOTE: Please don't use the same password as for the system user."
                 echo "  NOTE: Password must be at least 8 characters long."
-                echo -n "  NOTE: Please avoid using backslashes ( \\ ), quotes ( \` , ' , \" )"
-                echo " and dollar sign ( \$ ) in the password."
                 echo
                 echo "Enter the password now:"
-                read -s JUPYTERLAB_PASSWORD
+                read -rs JUPYTERLAB_PASSWORD
             done
             sed -i "s|ACCESS_TOKEN=.*|$(generate_token "$JUPYTERLAB_PASSWORD")|" "$LAB_PATH"/.env
         fi
     fi
 
     # Re-deploy JupyterLab
-    sudo docker compose -f "$LAB_PATH/docker-compose.yml" up -d &&
-        sudo docker system prune -a -f && source "$LAB_PATH/.env" &&
+    sudo "docker" compose -f "$LAB_PATH/docker-compose.yml" up -d &&
+        sudo "docker" system prune -a -f && source "$LAB_PATH/.env" &&
         echo "JupyterLab is running at $BIND_HOST:$PORT"
 }
 
@@ -284,7 +282,7 @@ function dns() {
         echo "  \`$DOMAIN        3600   IN  A       $IP\`"
         echo "  \`www.$DOMAIN    3600   IN  CNAME   $DOMAIN\`"
         echo "See README.md for help."
-        read -p "Press enter once DNS is configured"
+        read -rp "Press enter once DNS is configured"
         dig +short "$DOMAIN" @1.1.1.1 | grep -q "$IP" || {
             echo "Could not resolve $DOMAIN to $IP"
             echo "Please check DNS configuration and try again."
@@ -310,7 +308,7 @@ function ingress() {
         echo "Inbound ports 80 and 443 seem to be closed."
         echo "Please configure Security List ingress rules manually."
         echo "See README.md for help."
-        read -p "Press enter once ingress is configured"
+        read -rp "Press enter once ingress is configured"
         if [[ $(curl -sSI http://"$IP") &&
         $(curl -sSIk https://"$IP") ]]; then
             echo "Ingress is configured"
