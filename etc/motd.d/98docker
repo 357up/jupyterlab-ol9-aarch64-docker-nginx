@@ -1,0 +1,10 @@
+List containers:
+  running:
+    [92mdocker ps[0m
+  all:
+    [92mdocker ps -a[0m
+List processes running in the container:
+    [92mdocker top (<container> | <container_id>)[0m
+  for example:
+    [92mdocker top jupyterlab[0m
+

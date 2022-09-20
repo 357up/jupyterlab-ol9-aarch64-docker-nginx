@@ -1,0 +1,69 @@
+Check if system reboot is required by running:
+  [92mneeds-restarting -r[0m
+In order to restart the system, run:
+  [92msudo systemctl reboot[0m
+For system overview and process managment, run:
+  [92msudo htop[0m
+For help about particular command run:
+      [92mman <command>[0m
+    for example:
+      [92mman htop[0m
+  or
+      [92mcheat <command>[0m
+    for example:
+      [92mcheat -c cheat[0m
+Check if system service is running or not:
+    [92msystemctl status <service>...[0m
+  for example check if Firewalld is running:
+    [92msystemctl status firewalld[0m
+  or check if Nginx and Docker is running:
+    [92msystemctl status nginx docker[0m
+Restart system service by running:
+    [92msudo systemctl restart <serivce>...[0m
+  for example:
+    [92msudo systemctl restart nginx[0m
+Enable system service by running:
+    [92msudo systemctl enable --now <service>...[0m
+  for example:
+    [92msudo systemctl enable --now chronyd[0m
+Disable system service by running:
+    [92msudo systemctl disable --now <service>...[0m
+  for example:
+    [92msudo systemctl disable --now kdump[0m
+Install system package by running:
+    [92msudo dnf install <package>...[0m
+  for example:
+    [92msudo dnf install git curl wget openssl[0m
+Remove system package by running:
+  [92msudo dnf remove <package>[0m
+Install system updates by running:
+  [92msudo dnf update[0m
+Edit files by running:
+    [92mnano <file>...[0m
+    or
+    [92mvim <file>...[0m
+  for example:
+    [92mnano ~/.bashrc[0m
+Edit system' config files (files owned by root) by running:
+    [92msudo nano <file>...[0m
+    OR
+    [92msudo vim <file>...[0m
+  for example:
+    [92msudo nano ~/.bashrc[0m
+List listening sockets:
+  TCP:
+    [92msudo ss -lntp[0m
+  UDP:
+    [92msudo ss -lnup[0m
+Analyze disk usage with:
+  [92msudo ncdu[0m
+Check how much free space per volume:
+  [92mdf -H[0m
+View system logs:
+    [92msudo journalctl -xef[0m
+  more info: [92mman journalctl[0m
+Change user's password by running:
+    [92msudo passwd -u <user>[0m
+  for example:
+    [92msudo passwd -u opc[0m
+

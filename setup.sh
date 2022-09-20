@@ -79,7 +79,39 @@ function prep() {
     ## Install useful tools
     sudo dnf install -y vim git htop ncdu ansible-core \
         policycoreutils-python-utils netcat bind-utils \
-        wget curl unzip jq python3-pip
+        wget curl unzip jq python3-pip figlet
+
+    ## Install "Oh my BASH!"
+    if [[ ! -d /usr/local/share/oh-my-bash ]]; then
+        sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)" --unattended --prefix=/usr/local
+        cp /usr/local/share/oh-my-bash/bashrc ~/.bashrc
+        sudo cp cp /usr/local/share/oh-my-bash/bashrc /root/.bashrc 
+    fi
+
+    ## Install MOTD
+    ### Stylish hostname
+    sudo cp ./etc/motd.d/00hostname /etc/motd.d/
+    contents="\e[32m$(figlet -t -k "$(hostname)")\e[0m"
+    echo -e "$contents" | sudo tee /etc/motd.d/00hostname
+    ### Common commands
+    sudo cp ./etc/motd.d/97commands /etc/motd.d/
+    
+    ## Install cheat
+    curl -sSL https://github.com/cheat/cheat/releases/latest/download/cheat-linux-arm64.gz | gunzip -c > ./cheat
+    chmod +x ./cheat
+    if [[ -x /usr/local/bin/cheat ]]; then
+        if [[ $(./cheat -v) != $(/usr/local/bin/cheat -v) ]]; then
+            sudo mv ./cheat /usr/local/bin/cheat
+        else
+            rm ./cheat
+        fi
+    else
+        sudo mv ./cheat /usr/local/bin/cheat
+        mkdir -p ~/.config/cheat && cheat --init > ~/.config/cheat/conf.yml
+        sed -i "s#PAGER_PATH#less -FRX#g" ~/.config/cheat/conf.yml
+        mkdir -p ~/.config/cheat/cheatsheets/{community,personal}
+        git clone https://github.com/cheat/cheatsheets.git ~/.config/cheat/cheatsheets/community
+    fi
 
 }
 
@@ -122,10 +154,13 @@ function docker() {
     ## TODO: Other SSH settings
     ## 2) Reload ssh server config
     #sudo systemctl reload sshd
+
+    ## Install MOTD
+    sudo cp ./etc/motd.d/98docker /etc/motd.d/
+
 }
 
 function jupyter() {
-    # JupyterLab
     sudo mkdir -p "$LAB_PATH"/{notebooks,datasets}
     sudo rsync -av --exclude ".git*" ./jupyter-docker/ "$LAB_PATH"
     test -f "$LAB_PATH/.env" && sudo rm -f "$LAB_PATH/.env.example" ||
@@ -140,11 +175,12 @@ function jupyter() {
     sudo chown -R 1000:1000 "$LAB_PATH"/{notebooks,datasets}
 
     # Add $LAB_PATH to environment
-    sudo bash -c "cat > /etc/profile.d/jupyter.sh <<- EOF
-if [[ -z \"\\\$LAB_PATH\" ]]; then
-    export LAB_PATH=\"$LAB_PATH\"
-fi
-EOF"
+    sudo cp ./etc/profile.d/jupyterlab.sh /etc/profile.d/jupyterlab.sh
+    sudo chmod 644 /etc/profile.d/jupyterlab.sh
+    sudo sed -i "s|###LAB_PATH###|$LAB_PATH|" /etc/profile.d/jupyterlab.sh
+
+    # Install MOTD
+    sudo cp ./etc/motd.d/99jupyterlab /etc/motd.d/
 }
 
 function build() {
