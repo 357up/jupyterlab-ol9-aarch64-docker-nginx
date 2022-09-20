@@ -26,6 +26,9 @@ set -e
 # GLOBALS
 version='0.0.8beta'
 IP=$(curl -sSL https://ipv4.icanhazip.com)
+NGINX="/etc/nginx"
+DEFAULTD="$NGINX/default.d"
+CONFD="$NGINX/conf.d"
 
 declare -A ALL_STAGES=(
     ["prep"]=0
@@ -270,10 +273,7 @@ function web() {
             sudo mv $ERR_PATH $ERR_TARGET_PATH &&
             sudo ln -s $ERR_TARGET_PATH/_errors/main.css $ERR_TARGET_PATH
     }
-    ### Install custom nginx config
-    NGINX="/etc/nginx"
-    DEFAULTD="$NGINX/default.d"
-    CONFD="$NGINX/conf.d"
+    ### Install custom nginx configuration
     test -d "$DEFAULTD" || sudo mkdir -p "$DEFAULTD"
     test -d "$CONFD" || sudo mkdir -p "$CONFD"
     {
