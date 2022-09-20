@@ -96,6 +96,10 @@ function prep() {
     ### Common commands
     sudo cp ./etc/motd.d/97commands /etc/motd.d/
     
+    ## Print MOTD on login
+    sudo sed -i 's/^#PrintMotd.*/PrintMotd yes/' /etc/ssh/sshd_config
+    sudo systemctl reload sshd
+    
     ## Install cheat
     curl -sSL https://github.com/cheat/cheat/releases/latest/download/cheat-linux-arm64.gz | gunzip -c > ./cheat
     chmod +x ./cheat
