@@ -138,6 +138,13 @@ function jupyter() {
     # TODO: Make other .env variables configurable with this script
 
     sudo chown -R 1000:1000 "$LAB_PATH"/{notebooks,datasets}
+
+    # Add $LAB_PATH to environment
+    sudo bash -c "cat > /etc/profile.d/jupyter.sh <<- EOF
+if [[ -z \"\\\$LAB_PATH\" ]]; then
+    export LAB_PATH=\"$LAB_PATH\"
+fi
+EOF"
 }
 
 function build() {
