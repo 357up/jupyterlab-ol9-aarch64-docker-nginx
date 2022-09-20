@@ -85,7 +85,9 @@ function prep() {
     if [[ ! -d /usr/local/share/oh-my-bash ]]; then
         sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)" --unattended --prefix=/usr/local
         cp /usr/local/share/oh-my-bash/bashrc ~/.bashrc
-        sudo cp cp /usr/local/share/oh-my-bash/bashrc /root/.bashrc 
+        sudo cp /usr/local/share/oh-my-bash/bashrc /root/.bashrc
+        echo "HIST_STAMPS=\"dd/MM/yyyy\"" | sudo tee -a /root/.bashrc
+        echo "THEME_CLOCK_FORMAT=\"%H:%M:%S\"" | sudo tee -a /root/.bashrc
     fi
 
     ## Install MOTD
