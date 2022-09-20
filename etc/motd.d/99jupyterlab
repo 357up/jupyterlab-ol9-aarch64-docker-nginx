@@ -12,11 +12,11 @@ Update JupyterLab to the latest version:
         docker compose -f "$LAB_PATH/docker-compose.yml" down &&
         docker compose -f "$LAB_PATH/docker-compose.yml" up -d &&
         docker system prune -a[0m
-  Restart JupyterLab container:
-    [92mdocker compose -f "$LAB_PATH/docker-compose.yml" restart[0m
-  Inspect JupyterLab logs:
-    Print all logs:
-      [92mdocker compose -f "$LAB_PATH/docker-compose.yml" logs[0m
-    Print all logs and follow the output (CTRL+C to cancel):
-      [92mdocker compose -f "$LAB_PATH/docker-compose.yml" logs -f[0m
+Restart JupyterLab container:
+  [92mdocker compose -f "$LAB_PATH/docker-compose.yml" restart[0m
+Inspect JupyterLab logs:
+  Print all logs:
+    [92mdocker compose -f "$LAB_PATH/docker-compose.yml" logs[0m
+  Print all logs and follow the output (CTRL+C to cancel):
+    [92mdocker compose -f "$LAB_PATH/docker-compose.yml" logs -f[0m
 
