@@ -24,7 +24,7 @@ set -e
 # TODO: Create motd
 
 # GLOBALS
-version='0.8.0beta'
+version='0.8.1beta'
 IP=$(curl -sSL https://ipv4.icanhazip.com)
 NGINX="/etc/nginx"
 DEFAULTD="$NGINX/default.d"
