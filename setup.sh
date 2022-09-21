@@ -24,7 +24,7 @@ set -e
 # TODO: Create motd
 
 # GLOBALS
-version='0.0.8beta'
+version='0.8.1beta'
 IP=$(curl -sSL https://ipv4.icanhazip.com)
 NGINX="/etc/nginx"
 DEFAULTD="$NGINX/default.d"
@@ -87,10 +87,11 @@ function prep() {
     ## Install "Oh my BASH!"
     if [[ ! -d /usr/local/share/oh-my-bash ]]; then
         sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)" --unattended --prefix=/usr/local
-        echo "HIST_STAMPS=\"dd/MM/yyyy\"" | sudo tee -a /usr/local/share/oh-my-bash/bashrc
-        echo "THEME_CLOCK_FORMAT=\"%H:%M:%S\"" | sudo tee -a /usr/local/share/oh-my-bash/bashrc     
+        sudo sed -i '47s|HIST_STAMPS=.*|HIST_STAMPS="dd/MM/yyyy"|' /usr/local/share/oh-my-bash/bashrc
+        sudo sed -i '48 i THEME_CLOCK_FORMAT="%H:%M:%S"' /usr/local/share/oh-my-bash/bashrc    
         cp /usr/local/share/oh-my-bash/bashrc ~/.bashrc
         sudo cp /usr/local/share/oh-my-bash/bashrc /root/.bashrc
+        sudo sed -i 's/OSH_THEME=".*"/OSH_THEME="axin"/' /root/.bashrc
         source ~/.bashrc
     fi
 
